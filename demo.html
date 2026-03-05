@@ -1,0 +1,3799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="健康模拟器">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <title>Health Life Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 900px;
+            min-height: 600px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        /* 顶部控制栏 */
+        .top-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .control-btn:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .control-btn.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #FF9800 0%, #f57c00 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .stat-rating {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px 0;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .stat-rating.S { background: #FFD700; color: #333; }
+        .stat-rating.A { background: #4CAF50; color: white; }
+        .stat-rating.B { background: #8BC34A; color: white; }
+        .stat-rating.C { background: #FFC107; color: #333; }
+        .stat-rating.D { background: #FF9800; color: white; }
+        .stat-rating.F { background: #F44336; color: white; }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .food-grid, .exercise-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .food-item, .exercise-item, .supplement-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .food-item:hover, .exercise-item:hover, .supplement-item:hover {
+            border-color: #4CAF50;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .food-item.selected, .exercise-item.selected, .supplement-item.selected {
+            border-color: #4CAF50;
+            background: #e8f5e9;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+        }
+
+        .food-item.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #4CAF50;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .supplement-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .supplement-item {
+            padding: 12px;
+        }
+
+        .supplement-icon {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .supplement-dosage {
+            font-size: 11px;
+            color: #666;
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .supplement-benefit {
+            font-size: 10px;
+            color: #999;
+            margin-top: 5px;
+            line-height: 1.3;
+        }
+
+        .synergy-tip {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            border-left: 4px solid #4CAF50;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+
+        .conflict-warning {
+            background: linear-gradient(135deg, #ffebee, #ffcdd2);
+            border-left: 4px solid #f44336;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+
+        .food-icon, .exercise-icon {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        .selected-items {
+            background: #e8f5e9;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            min-height: 60px;
+        }
+
+        .selected-item {
+            display: inline-flex;
+            align-items: center;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 15px;
+            margin: 3px;
+            font-size: 14px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .remove-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 12px;
+        }
+
+        .weight-input, .duration-input {
+            width: 60px;
+            padding: 2px 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 0 5px;
+            text-align: center;
+        }
+
+        .adjust-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        .adjust-btn:hover {
+            background: #45a049;
+        }
+
+        .grade-display {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .grade-letter {
+            font-size: 80px;
+            font-weight: bold;
+        }
+
+        .grade-title {
+            font-size: 24px;
+            margin-top: 10px;
+        }
+
+        .achievement-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .achievement-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 10px;
+            margin: 5px 0;
+            opacity: 0.5;
+        }
+
+        .achievement-item.unlocked {
+            opacity: 1;
+            border-left: 4px solid #FFD700;
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .demo-notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        /* 滑块样式 */
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+            margin: 10px 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]#init-mood::-webkit-slider-thumb {
+            background: #FF9800;
+        }
+
+        input[type="range"]#init-strength::-webkit-slider-thumb {
+            background: #2196F3;
+        }
+
+        input[type="range"]#init-cardio::-webkit-slider-thumb {
+            background: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="top-controls">
+                <button id="music-btn" class="control-btn" onclick="toggleMusic()" data-lang="musicOff">🔇 音乐关</button>
+                <button id="lang-btn" class="control-btn" onclick="toggleLanguage()">🌐 中文</button>
+            </div>
+            <h1 data-lang="gameTitle">🎮 健康生活模拟器</h1>
+            <p data-lang="demoSubtitle">浏览器演示版 - 体验健康养成游戏的乐趣</p>
+        </div>
+
+        <div class="content">
+            <!-- 主菜单 -->
+            <div id="menu-screen" class="screen active">
+                <div class="demo-notice" data-lang="demoNotice">
+                    💡 这是演示版本，完整版请使用Electron运行。当前可以体验核心游戏流程！
+                </div>
+                <div style="text-align: center; padding: 40px;">
+                    <h2 style="margin-bottom: 30px;" data-lang="welcome">欢迎来到健康生活模拟器</h2>
+                    <p style="margin-bottom: 30px; color: #666;" data-lang="subtitle">
+                        通过21天的游戏周期，学习科学的健康知识，培养健康的生活习惯。
+                    </p>
+                    <button class="btn" onclick="playMusic(); showScreen('create-screen')" data-lang="startGame">🎮 开始新游戏</button>
+                    <button id="continue-btn" class="btn" style="display: none; background: linear-gradient(135deg, #2196F3, #1976D2);" onclick="continueGame()" data-lang="continueGame">📂 继续游戏</button>
+                    <button class="btn btn-secondary" onclick="showAchievements()" data-lang="achievements">🏆 查看成就</button>
+                    <button id="clear-save-btn" class="btn btn-danger" style="display: none; margin-top: 10px;" onclick="clearSaveAndReload()" data-lang="clearSave">🗑️ 清除存档</button>
+                </div>
+            </div>
+
+            <!-- 创建角色 -->
+            <div id="create-screen" class="screen">
+                <h2 style="margin-bottom: 20px;" data-lang="createCharacter">创建角色</h2>
+                <div class="card">
+                    <div class="form-group">
+                        <label data-lang="characterName">角色名称</label>
+                        <input type="text" id="char-name-input" placeholder="输入你的名字" value="玩家">
+                    </div>
+                    <div class="form-group">
+                        <label data-lang="gender">性别</label>
+                        <select id="char-gender">
+                            <option value="male" data-lang="male">男</option>
+                            <option value="female" data-lang="female">女</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-lang="height">身高 (cm)</label>
+                        <input type="number" id="char-height" value="170" min="100" max="250">
+                    </div>
+                    <div class="form-group">
+                        <label data-lang="weight">体重 (kg)</label>
+                        <input type="number" id="char-weight" value="70" min="30" max="200">
+                    </div>
+                    <div class="form-group">
+                        <label data-lang="age">年龄</label>
+                        <input type="number" id="char-age" value="25" min="10" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label data-lang="goal">健康目标</label>
+                        <select id="char-goal">
+                            <option value="lose" data-lang="loseWeight">减脂</option>
+                            <option value="maintain" selected data-lang="maintain">维持体重</option>
+                            <option value="gain" data-lang="gainMuscle">增肌</option>
+                        </select>
+                    </div>
+
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;">
+                    <h4 style="margin-bottom: 15px; color: #4CAF50;" data-lang="initialStats">📊 初始状态设定</h4>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 15px;" data-lang="initialStatsDesc">根据你今天的实际情况设定初始数值</p>
+
+                    <div class="form-group">
+                        <label>⚡ <span data-lang="energy">精力</span> (0-100)</label>
+                        <input type="range" id="init-energy" min="0" max="100" value="80" oninput="updateSliderValue('energy-value', this.value)">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 12px; color: #999;" data-lang="tired">疲惫</span>
+                            <span id="energy-value" style="font-weight: bold; color: #4CAF50;">80</span>
+                            <span style="font-size: 12px; color: #999;" data-lang="energetic">充沛</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>😊 <span data-lang="mood">心情</span> (0-100)</label>
+                        <input type="range" id="init-mood" min="0" max="100" value="70" oninput="updateSliderValue('mood-value', this.value)">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 12px; color: #999;" data-lang="low">低落</span>
+                            <span id="mood-value" style="font-weight: bold; color: #FF9800;">70</span>
+                            <span style="font-size: 12px; color: #999;" data-lang="happy">愉悦</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>💪 <span data-lang="strength">力量</span> (0-100)</label>
+                        <input type="range" id="init-strength" min="0" max="100" value="50" oninput="updateSliderValue('strength-value', this.value)">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 12px; color: #999;" data-lang="weak">虚弱</span>
+                            <span id="strength-value" style="font-weight: bold; color: #2196F3;">50</span>
+                            <span style="font-size: 12px; color: #999;" data-lang="strong">强壮</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>❤️ <span data-lang="cardio">心肺</span> (0-100)</label>
+                        <input type="range" id="init-cardio" min="0" max="100" value="50" oninput="updateSliderValue('cardio-value', this.value)">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 12px; color: #999;" data-lang="poor">较差</span>
+                            <span id="cardio-value" style="font-weight: bold; color: #f44336;">50</span>
+                            <span style="font-size: 12px; color: #999;" data-lang="excellent">优秀</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <button class="btn" onclick="createCharacter()" data-lang="create">✨ 创建角色</button>
+                    <button class="btn btn-secondary" onclick="showScreen('menu-screen')" data-lang="back">返回</button>
+                </div>
+            </div>
+
+            <!-- 游戏主界面 -->
+            <div id="game-screen" class="screen">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 id="display-name">玩家</h3>
+                        <p style="color: #666; font-size: 14px;"><span data-lang="dayText">第</span> <span id="current-day">1</span> <span data-lang="dayUnit">天</span> | <span data-lang="phaseText">第</span> <span id="current-phase">1</span> <span data-lang="phaseUnit">阶段</span></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="stat-value" id="display-weight">70.0 kg</div>
+                        <div class="stat-label" data-lang="currentWeight">当前体重</div>
+                    </div>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-energy">100</div>
+                        <div class="stat-rating" id="rating-energy">S</div>
+                        <div class="stat-label">⚡ <span data-lang="energyLabel">精力</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-mood">80</div>
+                        <div class="stat-rating" id="rating-mood">B</div>
+                        <div class="stat-label">😊 <span data-lang="moodLabel">心情</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-strength">50</div>
+                        <div class="stat-rating" id="rating-strength">C</div>
+                        <div class="stat-label">💪 <span data-lang="strengthLabel">力量</span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-cardio">50</div>
+                        <div class="stat-rating" id="rating-cardio">C</div>
+                        <div class="stat-label">❤️ <span data-lang="cardioLabel">心肺</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4 data-lang="todayNutrition">📊 今日营养摄入</h4>
+                    <div style="margin: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span data-lang="caloriesLabel">热量</span>
+                            <span id="cal-display">0 / 2000 kcal</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="cal-progress" style="width: 0%">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 每日心情记录 -->
+                <div class="card" style="background: linear-gradient(135deg, #fff8e1, #ffecb3); border-left-color: #FF9800;">
+                    <h4 style="margin-bottom: 10px;" data-lang="todayMoodTitle">😊 今日心情</h4>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px;" data-lang="todayMoodDesc">记录你今天的心情，获得专属祝福</p>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <input type="range" id="daily-mood" min="0" max="100" value="70" 
+                            style="flex: 1;" oninput="updateDailyMoodDisplay(this.value)">
+                        <span id="daily-mood-value" style="font-weight: bold; color: #FF9800; min-width: 30px;">70</span>
+                    </div>
+                    <div id="mood-emoji" style="font-size: 32px; text-align: center; margin: 10px 0;">🙂</div>
+                    <button class="btn" style="width: 100%;" onclick="recordMood()" data-lang="recordMoodBtn">💝 记录心情，获取祝福</button>
+                    <div id="mood-blessing" style="margin-top: 10px; padding: 10px; background: white; border-radius: 8px; display: none;">
+                        <p style="color: #666; font-style: italic; text-align: center;"></p>
+                    </div>
+                </div>
+
+                <!-- 补剂选择 -->
+                <div class="card" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-left-color: #2196F3;">
+                    <h4 style="margin-bottom: 10px;" data-lang="todaySupplement">💊 今日补剂</h4>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px;" data-lang="supplementDesc">选择合适的营养补剂，注意剂量和相互作用</p>
+                    <div id="selected-supplements" style="margin-bottom: 10px;">
+                        <p style="color: #999; font-size: 12px;" data-lang="noSupplementSelected">还没有选择补剂</p>
+                    </div>
+                    <button class="btn" style="width: 100%; background: linear-gradient(135deg, #2196F3, #1976D2);" onclick="showScreen('supplement-screen')" data-lang="selectSupplementBtn">💊 选择补剂</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+                    <button class="btn" onclick="showScreen('diet-screen')" data-lang="dietBtn">🍎 饮食安排</button>
+                    <button class="btn" onclick="showScreen('exercise-screen')" data-lang="exerciseBtn">🏃 运动计划</button>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="endDay()" data-lang="endDayBtn">🌙 结束今天</button>
+                </div>
+            </div>
+
+            <!-- 饮食界面 -->
+            <div id="diet-screen" class="screen">
+                <h3 style="margin-bottom: 15px;" data-lang="selectFoodTitle">🍎 选择食物</h3>
+                
+                <div class="selected-items" id="selected-foods">
+                    <p style="color: #999; text-align: center;" data-lang="noFoodSelected">还没有选择食物</p>
+                </div>
+
+                <h4 style="margin: 15px 0 10px; color: #FF9800;" data-lang="grainsTitle">🌾 主食</h4>
+                <div class="food-grid" id="food-grains"></div>
+
+                <h4 style="margin: 15px 0 10px; color: #f44336;" data-lang="proteinsTitle">🥩 蛋白质</h4>
+                <div class="food-grid" id="food-proteins"></div>
+
+                <h4 style="margin: 15px 0 10px; color: #4CAF50;" data-lang="vegetablesTitle">🥬 蔬菜</h4>
+                <div class="food-grid" id="food-vegetables"></div>
+
+                <h4 style="margin: 15px 0 10px; color: #FF5722;" data-lang="fruitsTitle">🍎 水果</h4>
+                <div class="food-grid" id="food-fruits"></div>
+
+                <h4 style="margin: 15px 0 10px; color: #795548;" data-lang="nutsTitle">🌰 坚果</h4>
+                <div class="food-grid" id="food-nuts"></div>
+
+                <h4 style="margin: 15px 0 10px; color: #2196F3;" data-lang="beveragesTitle">🥤 饮品</h4>
+                <div class="food-grid" id="food-beverages"></div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="showScreen('game-screen')" data-lang="completeBtn">完成</button>
+                </div>
+            </div>
+
+            <!-- 运动界面 -->
+            <div id="exercise-screen" class="screen">
+                <h3 style="margin-bottom: 15px;" data-lang="selectExerciseTitle">🏃 选择运动</h3>
+                
+                <div class="selected-items" id="selected-exercises">
+                    <p style="color: #999; text-align: center;" data-lang="noExerciseSelected">还没有选择运动</p>
+                </div>
+
+                <h4 style="margin: 15px 0 10px; color: #FF5722;" data-lang="aerobicTitle">🔥 有氧运动</h4>
+                <div class="exercise-grid" id="exercise-aerobic"></div>
+
+                <h4 style="margin: 15px 0 10px; color: #f44336;" data-lang="strengthTitle">💪 力量训练</h4>
+                <div class="exercise-grid" id="exercise-strength"></div>
+
+                <h4 style="margin: 15px 0 10px; color: #9C27B0;" data-lang="flexibilityTitle">🧘 柔韧性训练</h4>
+                <div class="exercise-grid" id="exercise-flexibility"></div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="showScreen('game-screen')" data-lang="completeBtn">完成</button>
+                </div>
+            </div>
+
+            <!-- 补剂选择界面 -->
+            <div id="supplement-screen" class="screen">
+                <h3 style="margin-bottom: 15px;" data-lang="selectSupplementTitle">💊 选择营养补剂</h3>
+                
+                <div class="selected-items" id="supplement-list">
+                    <p style="color: #999; text-align: center;" data-lang="noSupplementSelected2">还没有选择补剂</p>
+                </div>
+
+                <div id="supplement-warnings" style="display: none;" class="card" style="background: #ffebee; border-left-color: #f44336; margin: 15px 0;">
+                    <h4 style="color: #f44336; margin-bottom: 10px;" data-lang="supplementWarnings">⚠️ 注意事项</h4>
+                    <div id="warning-content"></div>
+                </div>
+
+                <h4 style="margin: 15px 0 10px; color: #FF9800;" data-lang="vitaminsTitle">🍊 维生素</h4>
+                <div class="supplement-grid" id="supplements-vitamins"></div>
+
+                <h4 style="margin: 15px 0 10px; color: #2196F3;" data-lang="mineralsTitle">🥛 矿物质</h4>
+                <div class="supplement-grid" id="supplements-minerals"></div>
+
+                <h4 style="margin: 15px 0 10px; color: #9C27B0;" data-lang="othersTitle">✨ 其他补剂</h4>
+                <div class="supplement-grid" id="supplements-others"></div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="showScreen('game-screen')" data-lang="completeBtn">完成</button>
+                </div>
+            </div>
+
+            <!-- 每日总结 -->
+            <div id="summary-screen" class="screen">
+                <div class="grade-display">
+                    <div class="grade-letter" id="summary-grade" style="color: #4CAF50;">B</div>
+                    <div class="grade-title" id="summary-title" data-lang="gradeGood">良好</div>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="score-overall">75</div>
+                        <div class="stat-label" data-lang="overallScoreLabel">综合评分</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="score-diet">70</div>
+                        <div class="stat-label" data-lang="dietScoreLabel">饮食评分</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="score-exercise">80</div>
+                        <div class="stat-label" data-lang="exerciseScoreLabel">运动评分</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="score-supplement">0</div>
+                        <div class="stat-label" data-lang="supplementScoreLabel">补剂评分</div>
+                    </div>
+                </div>
+
+                <!-- 食物搭配建议 -->
+                <div id="synergy-tips" style="display: none;">
+                    <h4 style="margin: 15px 0 10px; color: #4CAF50;" data-lang="foodSynergyTitle">🌟 食物搭配建议</h4>
+                    <div id="synergy-content"></div>
+                </div>
+
+                <!-- 食物禁忌警告 -->
+                <div id="conflict-warnings" style="display: none;">
+                    <h4 style="margin: 15px 0 10px; color: #f44336;" data-lang="foodConflictTitle">⚠️ 食物搭配禁忌</h4>
+                    <div id="conflict-content"></div>
+                </div>
+
+                <!-- 补剂反馈 -->
+                <div id="supplement-feedback" style="display: none;">
+                    <h4 style="margin: 15px 0 10px; color: #2196F3;" data-lang="supplementFeedbackTitle">💊 补剂使用反馈</h4>
+                    <div id="supplement-content"></div>
+                </div>
+
+                <div id="achievement-unlock" style="display: none;" class="card">
+                    <h4 data-lang="achievementUnlockTitle">🏆 解锁成就</h4>
+                    <p id="achievement-name"></p>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="nextDay()" data-lang="nextDayBtn">继续下一天</button>
+                </div>
+            </div>
+
+            <!-- 游戏结束 -->
+            <div id="end-screen" class="screen">
+                <div class="grade-display">
+                    <div class="grade-letter" id="final-grade" style="color: #FFD700;">A</div>
+                    <div class="grade-title" id="final-title" data-lang="gradeExcellent">优秀</div>
+                </div>
+
+                <div class="card">
+                    <h4 data-lang="gameCompleteTitle">🎉 游戏完成！</h4>
+                    <p id="final-summary" style="margin-top: 10px;" data-lang="gameCompleteDesc">恭喜你完成了21天的健康养成计划！</p>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="final-score">85</div>
+                        <div class="stat-label" data-lang="finalScoreLabel">最终评分</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="final-weight">68.5</div>
+                        <div class="stat-label" data-lang="finalWeightLabel">最终体重(kg)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="final-achievements">12</div>
+                        <div class="stat-label" data-lang="finalAchievementsLabel">解锁成就</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="location.reload()" data-lang="restartBtn">🔄 重新开始</button>
+                </div>
+            </div>
+
+            <!-- 成就界面 -->
+            <div id="achievements-screen" class="screen">
+                <h3 style="margin-bottom: 15px;" data-lang="achievementsTitle">🏆 成就系统</h3>
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <span id="achievement-stats" style="color: #666;">已解锁: 0/75 (0%)</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; justify-content: center;">
+                    <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="filterAchievements('all')" data-lang="filterAll">全部</button>
+                    <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="filterAchievements('diet')" data-lang="filterDiet">🍽️ 饮食</button>
+                    <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="filterAchievements('exercise')" data-lang="filterExercise">🏃 运动</button>
+                    <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="filterAchievements('lifestyle')" data-lang="filterLifestyle">😊 生活</button>
+                    <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="filterAchievements('progress')" data-lang="filterProgress">📅 进度</button>
+                    <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="filterAchievements('score')" data-lang="filterScore">⭐ 评分</button>
+                    <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="filterAchievements('weight')" data-lang="filterWeight">⚖️ 体重</button>
+                    <button class="btn" style="padding: 8px 16px; font-size: 14px;" onclick="filterAchievements('special')" data-lang="filterSpecial">👑 特殊</button>
+                </div>
+                <div class="achievement-list" id="achievement-list"></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="showScreen('menu-screen')" data-lang="backBtn">返回</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏数据 - 丰富的食物库
+        const foods = {
+            grains: [
+                { id: 'rice', name: '米饭', icon: '🍚', calories: 200, protein: 4, carbs: 45, fat: 0.5 },
+                { id: 'bread', name: '面包', icon: '🍞', calories: 250, protein: 8, carbs: 45, fat: 3 },
+                { id: 'noodles', name: '面条', icon: '🍜', calories: 280, protein: 10, carbs: 55, fat: 1 },
+                { id: 'porridge', name: '粥', icon: '🥣', calories: 120, protein: 3, carbs: 25, fat: 0.5 },
+                { id: 'steamed_bun', name: '馒头', icon: '🥟', calories: 220, protein: 7, carbs: 45, fat: 1 },
+                { id: 'corn', name: '玉米', icon: '🌽', calories: 120, protein: 4, carbs: 25, fat: 1 },
+                { id: 'oats', name: '燕麦', icon: '🌾', calories: 150, protein: 5, carbs: 27, fat: 3 },
+                { id: 'sweet_potato', name: '红薯', icon: '🍠', calories: 130, protein: 2, carbs: 30, fat: 0.2 },
+                { id: 'potato', name: '土豆', icon: '🥔', calories: 110, protein: 2, carbs: 25, fat: 0.1 },
+                { id: 'pancake', name: '煎饼', icon: '🥞', calories: 350, protein: 8, carbs: 50, fat: 12 },
+                { id: 'wonton', name: '馄饨', icon: '🥟', calories: 260, protein: 12, carbs: 35, fat: 8 },
+                { id: 'dumpling', name: '饺子', icon: '🥟', calories: 240, protein: 10, carbs: 32, fat: 9 },
+                { id: 'baozi', name: '包子', icon: '🥟', calories: 280, protein: 9, carbs: 42, fat: 8 },
+                { id: 'congee', name: '小米粥', icon: '🥣', calories: 90, protein: 2, carbs: 19, fat: 0.5 },
+                { id: 'quinoa', name: '藜麦', icon: '🌾', calories: 180, protein: 6, carbs: 32, fat: 3 }
+            ],
+            proteins: [
+                { id: 'chicken', name: '鸡胸肉', icon: '🍗', calories: 165, protein: 31, carbs: 0, fat: 3.6 },
+                { id: 'beef', name: '牛肉', icon: '🥩', calories: 250, protein: 26, carbs: 0, fat: 15 },
+                { id: 'fish', name: '鱼肉', icon: '🐟', calories: 200, protein: 22, carbs: 0, fat: 12 },
+                { id: 'egg', name: '鸡蛋', icon: '🥚', calories: 70, protein: 6, carbs: 0.6, fat: 5 },
+                { id: 'tofu', name: '豆腐', icon: '🧊', calories: 80, protein: 8, carbs: 2, fat: 4 },
+                { id: 'milk', name: '牛奶', icon: '🥛', calories: 150, protein: 8, carbs: 12, fat: 8 },
+                { id: 'pork', name: '猪肉', icon: '🥓', calories: 240, protein: 20, carbs: 0, fat: 17 },
+                { id: 'shrimp', name: '虾', icon: '🦐', calories: 85, protein: 18, carbs: 0, fat: 1 },
+                { id: 'salmon', name: '三文鱼', icon: '🐟', calories: 220, protein: 20, carbs: 0, fat: 15 },
+                { id: 'tuna', name: '金枪鱼', icon: '🐟', calories: 130, protein: 28, carbs: 0, fat: 1 },
+                { id: 'yogurt', name: '酸奶', icon: '🥛', calories: 100, protein: 4, carbs: 12, fat: 3 },
+                { id: 'cheese', name: '奶酪', icon: '🧀', calories: 110, protein: 7, carbs: 1, fat: 9 },
+                { id: 'beans', name: '黄豆', icon: '🫘', calories: 170, protein: 15, carbs: 20, fat: 7 },
+                { id: 'lentils', name: '扁豆', icon: '🫘', calories: 115, protein: 9, carbs: 20, fat: 0.4 },
+                { id: 'duck', name: '鸭肉', icon: '🍗', calories: 280, protein: 19, carbs: 0, fat: 22 },
+                { id: 'lamb', name: '羊肉', icon: '🥩', calories: 290, protein: 25, carbs: 0, fat: 20 },
+                { id: 'crab', name: '螃蟹', icon: '🦀', calories: 97, protein: 19, carbs: 0, fat: 2 },
+                { id: 'lobster', name: '龙虾', icon: '🦞', calories: 89, protein: 19, carbs: 1, fat: 0.9 }
+            ],
+            vegetables: [
+                { id: 'broccoli', name: '西兰花', icon: '🥦', calories: 30, protein: 3, carbs: 6, fat: 0.3 },
+                { id: 'carrot', name: '胡萝卜', icon: '🥕', calories: 40, protein: 1, carbs: 9, fat: 0.2 },
+                { id: 'tomato', name: '番茄', icon: '🍅', calories: 20, protein: 1, carbs: 4, fat: 0.2 },
+                { id: 'cucumber', name: '黄瓜', icon: '🥒', calories: 15, protein: 0.5, carbs: 3, fat: 0.1 },
+                { id: 'spinach', name: '菠菜', icon: '🥬', calories: 25, protein: 3, carbs: 4, fat: 0.3 },
+                { id: 'mushroom', name: '蘑菇', icon: '🍄', calories: 20, protein: 2, carbs: 3, fat: 0.3 },
+                { id: 'cabbage', name: '白菜', icon: '🥬', calories: 25, protein: 1.5, carbs: 5, fat: 0.1 },
+                { id: 'onion', name: '洋葱', icon: '🧅', calories: 40, protein: 1, carbs: 9, fat: 0.1 },
+                { id: 'garlic', name: '大蒜', icon: '🧄', calories: 149, protein: 6, carbs: 33, fat: 0.5 },
+                { id: 'ginger', name: '生姜', icon: '🫚', calories: 80, protein: 2, carbs: 18, fat: 0.8 },
+                { id: 'eggplant', name: '茄子', icon: '🍆', calories: 25, protein: 1, carbs: 6, fat: 0.2 },
+                { id: 'pepper', name: '青椒', icon: '🫑', calories: 20, protein: 1, carbs: 5, fat: 0.1 },
+                { id: 'celery', name: '芹菜', icon: '🥬', calories: 14, protein: 0.7, carbs: 3, fat: 0.2 },
+                { id: 'lettuce', name: '生菜', icon: '🥬', calories: 15, protein: 1, carbs: 3, fat: 0.2 },
+                { id: 'pumpkin', name: '南瓜', icon: '🎃', calories: 26, protein: 1, carbs: 6, fat: 0.1 },
+                { id: 'radish', name: '萝卜', icon: '🥕', calories: 16, protein: 0.7, carbs: 4, fat: 0.1 },
+                { id: 'bamboo', name: '竹笋', icon: '🎋', calories: 27, protein: 2.5, carbs: 5, fat: 0.3 },
+                { id: 'seaweed', name: '海带', icon: '🌿', calories: 43, protein: 2, carbs: 9, fat: 0.6 }
+            ],
+            fruits: [
+                { id: 'apple', name: '苹果', icon: '🍎', calories: 52, protein: 0.3, carbs: 14, fat: 0.2 },
+                { id: 'banana', name: '香蕉', icon: '🍌', calories: 89, protein: 1.1, carbs: 23, fat: 0.3 },
+                { id: 'orange', name: '橙子', icon: '🍊', calories: 47, protein: 0.9, carbs: 12, fat: 0.1 },
+                { id: 'grape', name: '葡萄', icon: '🍇', calories: 62, protein: 0.6, carbs: 16, fat: 0.3 },
+                { id: 'watermelon', name: '西瓜', icon: '🍉', calories: 30, protein: 0.6, carbs: 8, fat: 0.2 },
+                { id: 'strawberry', name: '草莓', icon: '🍓', calories: 32, protein: 0.7, carbs: 8, fat: 0.3 },
+                { id: 'peach', name: '桃子', icon: '🍑', calories: 39, protein: 0.9, carbs: 10, fat: 0.3 },
+                { id: 'pear', name: '梨', icon: '🍐', calories: 57, protein: 0.4, carbs: 15, fat: 0.1 },
+                { id: 'mango', name: '芒果', icon: '🥭', calories: 60, protein: 0.8, carbs: 15, fat: 0.4 },
+                { id: 'pineapple', name: '菠萝', icon: '🍍', calories: 50, protein: 0.5, carbs: 13, fat: 0.1 },
+                { id: 'kiwi', name: '猕猴桃', icon: '🥝', calories: 61, protein: 1.1, carbs: 15, fat: 0.5 },
+                { id: 'cherry', name: '樱桃', icon: '🍒', calories: 50, protein: 1, carbs: 12, fat: 0.3 },
+                { id: 'lemon', name: '柠檬', icon: '🍋', calories: 29, protein: 1.1, carbs: 9, fat: 0.3 },
+                { id: 'coconut', name: '椰子', icon: '🥥', calories: 354, protein: 3, carbs: 15, fat: 33 },
+                { id: 'avocado', name: '牛油果', icon: '🥑', calories: 160, protein: 2, carbs: 9, fat: 15 },
+                { id: 'blueberry', name: '蓝莓', icon: '🫐', calories: 57, protein: 0.7, carbs: 14, fat: 0.3 }
+            ],
+            nuts: [
+                { id: 'almond', name: '杏仁', icon: '🌰', calories: 579, protein: 21, carbs: 22, fat: 50 },
+                { id: 'walnut', name: '核桃', icon: '🌰', calories: 654, protein: 15, carbs: 14, fat: 65 },
+                { id: 'cashew', name: '腰果', icon: '🌰', calories: 553, protein: 18, carbs: 30, fat: 44 },
+                { id: 'peanut', name: '花生', icon: '🥜', calories: 567, protein: 26, carbs: 16, fat: 50 },
+                { id: 'sunflower', name: '葵花籽', icon: '🌻', calories: 584, protein: 21, carbs: 20, fat: 51 },
+                { id: 'pumpkin_seed', name: '南瓜子', icon: '🎃', calories: 559, protein: 30, carbs: 11, fat: 49 },
+                { id: 'sesame', name: '芝麻', icon: '🌾', calories: 573, protein: 18, carbs: 23, fat: 50 },
+                { id: 'chia', name: '奇亚籽', icon: '🌱', calories: 486, protein: 17, carbs: 42, fat: 31 }
+            ],
+            beverages: [
+                { id: 'water', name: '水', icon: '💧', calories: 0, protein: 0, carbs: 0, fat: 0 },
+                { id: 'tea', name: '绿茶', icon: '🍵', calories: 2, protein: 0, carbs: 0.5, fat: 0 },
+                { id: 'coffee', name: '咖啡', icon: '☕', calories: 5, protein: 0.3, carbs: 1, fat: 0 },
+                { id: 'juice', name: '果汁', icon: '🧃', calories: 110, protein: 0.5, carbs: 26, fat: 0 },
+                { id: 'soda', name: '汽水', icon: '🥤', calories: 140, protein: 0, carbs: 35, fat: 0 },
+                { id: 'beer', name: '啤酒', icon: '🍺', calories: 150, protein: 1, carbs: 13, fat: 0 },
+                { id: 'wine', name: '红酒', icon: '🍷', calories: 125, protein: 0.1, carbs: 4, fat: 0 },
+                { id: 'smoothie', name: '奶昔', icon: '🥤', calories: 200, protein: 5, carbs: 35, fat: 5 },
+                { id: 'soy_milk', name: '豆浆', icon: '🥛', calories: 80, protein: 4, carbs: 10, fat: 3 },
+                { id: 'coconut_water', name: '椰子水', icon: '🥥', calories: 19, protein: 0.7, carbs: 4, fat: 0.2 }
+            ]
+        };
+
+        // 补剂数据 - 全面扩展版
+        const supplements = {
+            vitamins: [
+                { 
+                    id: 'vitamin_c', 
+                    name: '维生素C', 
+                    icon: '🍊', 
+                    dosage: '100mg',
+                    dailyMax: '2000mg',
+                    benefits: '增强免疫力，促进胶原蛋白合成，抗氧化',
+                    bestTime: '餐后服用',
+                    interactions: ['iron'], // 促进铁吸收
+                    conflicts: [],
+                    recommend: '成人每日推荐100-200mg，吸烟者需要更多'
+                },
+                { 
+                    id: 'vitamin_d', 
+                    name: '维生素D', 
+                    icon: '☀️', 
+                    dosage: '1000IU',
+                    dailyMax: '4000IU',
+                    benefits: '促进钙吸收，增强骨骼健康，调节免疫系统',
+                    bestTime: '随餐服用（含脂肪）',
+                    interactions: ['calcium', 'magnesium'],
+                    conflicts: [],
+                    recommend: '成人每日推荐600-800IU，缺乏者可补充1000-2000IU'
+                },
+                { 
+                    id: 'vitamin_b_complex', 
+                    name: '复合维生素B', 
+                    icon: '💊', 
+                    dosage: '1片',
+                    dailyMax: '按说明',
+                    benefits: '能量代谢，神经系统健康，缓解疲劳',
+                    bestTime: '早餐后服用',
+                    interactions: [],
+                    conflicts: ['coffee'], // 咖啡影响吸收
+                    recommend: '包含B1、B2、B6、B12等，成人每日1片'
+                },
+                { 
+                    id: 'vitamin_e', 
+                    name: '维生素E', 
+                    icon: '🌻', 
+                    dosage: '200IU',
+                    dailyMax: '1000IU',
+                    benefits: '抗氧化，保护细胞膜，美容养颜',
+                    bestTime: '随餐服用',
+                    interactions: ['vitamin_c'],
+                    conflicts: ['iron'], // 影响铁吸收
+                    recommend: '成人每日推荐15mg（约22IU），最高不超过1000IU'
+                },
+                { 
+                    id: 'vitamin_a', 
+                    name: '维生素A', 
+                    icon: '🥕', 
+                    dosage: '3000IU',
+                    dailyMax: '10000IU',
+                    benefits: '视力保护，皮肤健康，免疫功能',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '成人男性900mcg，女性700mcg，孕妇慎用'
+                },
+                { 
+                    id: 'vitamin_k', 
+                    name: '维生素K', 
+                    icon: '🥬', 
+                    dosage: '100mcg',
+                    dailyMax: '1000mcg',
+                    benefits: '血液凝固，骨骼健康，心血管保护',
+                    bestTime: '随餐服用',
+                    interactions: ['calcium', 'vitamin_d'],
+                    conflicts: ['blood_thinners'], // 与抗凝血药冲突
+                    recommend: '成人男性120mcg，女性90mcg'
+                },
+                { 
+                    id: 'vitamin_b12', 
+                    name: '维生素B12', 
+                    icon: '🔴', 
+                    dosage: '500mcg',
+                    dailyMax: '5000mcg',
+                    benefits: '神经系统，红细胞生成，DNA合成',
+                    bestTime: '空腹或餐后',
+                    interactions: ['folate'],
+                    conflicts: [],
+                    recommend: '成人每日2.4mcg，素食者和老年人需要补充'
+                },
+                { 
+                    id: 'folate', 
+                    name: '叶酸', 
+                    icon: '🌿', 
+                    dosage: '400mcg',
+                    dailyMax: '1000mcg',
+                    benefits: 'DNA合成，细胞分裂，胎儿发育',
+                    bestTime: '空腹或餐后',
+                    interactions: ['vitamin_b12'],
+                    conflicts: [],
+                    recommend: '成人400mcg，孕妇600mcg，备孕必备'
+                },
+                { 
+                    id: 'biotin', 
+                    name: '生物素', 
+                    icon: '💅', 
+                    dosage: '5000mcg',
+                    dailyMax: '10000mcg',
+                    benefits: '头发指甲健康，能量代谢，皮肤健康',
+                    bestTime: '任意时间',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '成人每日30mcg，美容需求可补充5000-10000mcg'
+                },
+                { 
+                    id: 'vitamin_b6', 
+                    name: '维生素B6', 
+                    icon: '🍌', 
+                    dosage: '50mg',
+                    dailyMax: '100mg',
+                    benefits: '蛋白质代谢，神经递质合成，免疫功能',
+                    bestTime: '餐后服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '成人每日1.3-1.7mg，不超过100mg'
+                }
+            ],
+            minerals: [
+                { 
+                    id: 'calcium', 
+                    name: '钙片', 
+                    icon: '🥛', 
+                    dosage: '500mg',
+                    dailyMax: '2500mg',
+                    benefits: '骨骼健康，肌肉收缩，神经传导',
+                    bestTime: '晚餐后服用',
+                    interactions: ['vitamin_d'],
+                    conflicts: ['iron', 'spinach', 'tea'], // 影响吸收
+                    recommend: '成人每日1000-1200mg，分次服用吸收更好'
+                },
+                { 
+                    id: 'iron', 
+                    name: '铁剂', 
+                    icon: '🔴', 
+                    dosage: '18mg',
+                    dailyMax: '45mg',
+                    benefits: '预防贫血，氧气运输，能量代谢',
+                    bestTime: '空腹服用（配合维C）',
+                    interactions: ['vitamin_c'],
+                    conflicts: ['tea', 'coffee', 'calcium', 'dairy'],
+                    recommend: '男性8mg，女性18mg（经期），孕妇27mg'
+                },
+                { 
+                    id: 'magnesium', 
+                    name: '镁', 
+                    icon: '🌿', 
+                    dosage: '200mg',
+                    dailyMax: '350mg',
+                    benefits: '肌肉放松，睡眠改善，心脏健康',
+                    bestTime: '睡前服用',
+                    interactions: ['vitamin_d'],
+                    conflicts: ['calcium'], // 竞争吸收
+                    recommend: '成人男性400-420mg，女性310-320mg'
+                },
+                { 
+                    id: 'zinc', 
+                    name: '锌', 
+                    icon: '⚡', 
+                    dosage: '15mg',
+                    dailyMax: '40mg',
+                    benefits: '免疫系统，伤口愈合，味觉嗅觉',
+                    bestTime: '餐后服用',
+                    interactions: [],
+                    conflicts: ['calcium', 'iron'],
+                    recommend: '男性11mg，女性8mg，感冒时可短期增加'
+                },
+                { 
+                    id: 'selenium', 
+                    name: '硒', 
+                    icon: '🔆', 
+                    dosage: '100mcg',
+                    dailyMax: '400mcg',
+                    benefits: '甲状腺功能，抗氧化，免疫系统',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '成人每日55mcg，不超过400mcg'
+                },
+                { 
+                    id: 'iodine', 
+                    name: '碘', 
+                    icon: '🧂', 
+                    dosage: '150mcg',
+                    dailyMax: '1100mcg',
+                    benefits: '甲状腺激素，代谢调节，大脑发育',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '成人150mcg，孕妇220mcg，哺乳期290mcg'
+                },
+                { 
+                    id: 'chromium', 
+                    name: '铬', 
+                    icon: '⚙️', 
+                    dosage: '200mcg',
+                    dailyMax: '1000mcg',
+                    benefits: '血糖调节，胰岛素敏感性，脂肪代谢',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '男性35mcg，女性25mcg，糖尿病患者可适量补充'
+                },
+                { 
+                    id: 'copper', 
+                    name: '铜', 
+                    icon: '🟤', 
+                    dosage: '2mg',
+                    dailyMax: '10mg',
+                    benefits: '铁代谢，结缔组织，神经系统',
+                    bestTime: '随餐服用',
+                    interactions: ['zinc'],
+                    conflicts: ['zinc_high_dose'], // 高剂量锌影响铜吸收
+                    recommend: '成人每日900mcg，与锌保持平衡'
+                },
+                { 
+                    id: 'manganese', 
+                    name: '锰', 
+                    icon: '⛏️', 
+                    dosage: '5mg',
+                    dailyMax: '11mg',
+                    benefits: '骨骼发育，抗氧化酶，新陈代谢',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '男性2.3mg，女性1.8mg，一般饮食即可满足'
+                },
+                { 
+                    id: 'potassium', 
+                    name: '钾', 
+                    icon: '🍌', 
+                    dosage: '99mg',
+                    dailyMax: '无上限（食物）',
+                    benefits: '血压调节，肌肉收缩，神经传导',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['kidney_disease'], // 肾病患者慎用
+                    recommend: '成人每日2600-3400mg，优先从食物中获取'
+                }
+            ],
+            others: [
+                { 
+                    id: 'omega3', 
+                    name: '鱼油(Omega-3)', 
+                    icon: '🐟', 
+                    dosage: '1000mg',
+                    dailyMax: '3000mg',
+                    benefits: '心血管健康，抗炎，大脑功能',
+                    bestTime: '随餐服用',
+                    interactions: ['vitamin_d'],
+                    conflicts: [],
+                    recommend: 'EPA+DHA每日250-500mg，心血管疾病可增至1000mg'
+                },
+                { 
+                    id: 'probiotic', 
+                    name: '益生菌', 
+                    icon: '🦠', 
+                    dosage: '100亿CFU',
+                    dailyMax: '按说明',
+                    benefits: '肠道健康，消化改善，免疫力',
+                    bestTime: '餐前30分钟',
+                    interactions: ['yogurt'],
+                    conflicts: ['antibiotics'],
+                    recommend: '每日100-500亿CFU，含多种菌株效果更好'
+                },
+                { 
+                    id: 'collagen', 
+                    name: '胶原蛋白', 
+                    icon: '✨', 
+                    dosage: '5g',
+                    dailyMax: '10g',
+                    benefits: '皮肤弹性，关节健康，抗衰老',
+                    bestTime: '空腹或睡前',
+                    interactions: ['vitamin_c'],
+                    conflicts: [],
+                    recommend: '每日5-10g，配合维生素C效果更佳'
+                },
+                { 
+                    id: 'creatine', 
+                    name: '肌酸', 
+                    icon: '💪', 
+                    dosage: '5g',
+                    dailyMax: '5g',
+                    benefits: '增强力量，肌肉增长，运动表现',
+                    bestTime: '运动后或任意时间',
+                    interactions: ['protein'],
+                    conflicts: ['caffeine'],
+                    recommend: '每日3-5g，无需冲击期，长期使用安全'
+                },
+                { 
+                    id: 'bcaa', 
+                    name: '支链氨基酸(BCAA)', 
+                    icon: '🏋️', 
+                    dosage: '10g',
+                    dailyMax: '20g',
+                    benefits: '肌肉合成，运动恢复，减少疲劳',
+                    bestTime: '运动前后',
+                    interactions: ['protein'],
+                    conflicts: [],
+                    recommend: '运动前后各5-10g，比例2:1:1（亮氨酸:异亮氨酸:缬氨酸）'
+                },
+                { 
+                    id: 'glutamine', 
+                    name: '谷氨酰胺', 
+                    icon: '🔄', 
+                    dosage: '5g',
+                    dailyMax: '15g',
+                    benefits: '肠道健康，免疫支持，肌肉恢复',
+                    bestTime: '空腹或睡前',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日5-10g，高强度训练或生病时可增加'
+                },
+                { 
+                    id: 'coq10', 
+                    name: '辅酶Q10', 
+                    icon: '❤️', 
+                    dosage: '100mg',
+                    dailyMax: '600mg',
+                    benefits: '心脏健康，能量产生，抗氧化',
+                    bestTime: '随餐服用（含脂肪）',
+                    interactions: ['statins'], // 他汀类药物会消耗CoQ10
+                    conflicts: [],
+                    recommend: '每日100-200mg，40岁以上或服用他汀者建议补充'
+                },
+                { 
+                    id: 'l_carnitine', 
+                    name: '左旋肉碱', 
+                    icon: '🔥', 
+                    dosage: '500mg',
+                    dailyMax: '2000mg',
+                    benefits: '脂肪代谢，能量产生，运动表现',
+                    bestTime: '运动前或随餐',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日500-2000mg，素食者可能需要补充'
+                },
+                { 
+                    id: 'alpha_lipoic_acid', 
+                    name: '硫辛酸', 
+                    icon: '⚛️', 
+                    dosage: '300mg',
+                    dailyMax: '600mg',
+                    benefits: '抗氧化，血糖调节，神经保护',
+                    bestTime: '空腹服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日300-600mg，糖尿病患者可考虑'
+                },
+                { 
+                    id: 'quercetin', 
+                    name: '槲皮素', 
+                    icon: '🍎', 
+                    dosage: '500mg',
+                    dailyMax: '1000mg',
+                    benefits: '抗过敏，抗炎，心血管保护',
+                    bestTime: '随餐服用',
+                    interactions: ['vitamin_c'],
+                    conflicts: [],
+                    recommend: '每日500-1000mg，过敏季节可短期增加'
+                },
+                { 
+                    id: 'resveratrol', 
+                    name: '白藜芦醇', 
+                    icon: '🍇', 
+                    dosage: '250mg',
+                    dailyMax: '1500mg',
+                    benefits: '抗衰老，心血管保护，抗氧化',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['blood_thinners'],
+                    recommend: '每日150-500mg，相当于红酒中的含量'
+                },
+                { 
+                    id: 'melatonin', 
+                    name: '褪黑素', 
+                    icon: '🌙', 
+                    dosage: '3mg',
+                    dailyMax: '10mg',
+                    benefits: '改善睡眠，调节生物钟，抗氧化',
+                    bestTime: '睡前30分钟',
+                    interactions: [],
+                    conflicts: ['sedatives'], // 与镇静剂冲突
+                    recommend: '0.5-5mg即可，低剂量更有效，短期使用'
+                },
+                { 
+                    id: '5htp', 
+                    name: '5-羟色氨酸', 
+                    icon: '🧠', 
+                    dosage: '100mg',
+                    dailyMax: '300mg',
+                    benefits: '情绪调节，睡眠改善，食欲控制',
+                    bestTime: '睡前或空腹',
+                    interactions: [],
+                    conflicts: ['antidepressants'], // 与抗抑郁药冲突
+                    recommend: '每日50-100mg，与SSRI类药物不可同用'
+                },
+                { 
+                    id: 'gaba', 
+                    name: 'GABA', 
+                    icon: '😌', 
+                    dosage: '750mg',
+                    dailyMax: '3000mg',
+                    benefits: '缓解焦虑，改善睡眠，放松神经',
+                    bestTime: '睡前或空腹',
+                    interactions: [],
+                    conflicts: ['blood_pressure_meds'],
+                    recommend: '每日250-750mg，空腹吸收更好'
+                },
+                { 
+                    id: 'l_theanine', 
+                    name: 'L-茶氨酸', 
+                    icon: '🍵', 
+                    dosage: '200mg',
+                    dailyMax: '400mg',
+                    benefits: '放松专注，减少焦虑，改善睡眠',
+                    bestTime: '任意时间',
+                    interactions: ['caffeine'],
+                    conflicts: [],
+                    recommend: '每日100-200mg，与咖啡因搭配效果佳'
+                },
+                { 
+                    id: 'ashwagandha', 
+                    name: '南非醉茄', 
+                    icon: '🌿', 
+                    dosage: '600mg',
+                    dailyMax: '1200mg',
+                    benefits: '减压适应原，改善睡眠，增强免疫',
+                    bestTime: '随餐或睡前',
+                    interactions: [],
+                    conflicts: ['sedatives', 'thyroid_meds'],
+                    recommend: '每日300-600mg标准化提取物（含5%醉茄内酯）'
+                },
+                { 
+                    id: 'rhodiola', 
+                    name: '红景天', 
+                    icon: '🏔️', 
+                    dosage: '500mg',
+                    dailyMax: '1000mg',
+                    benefits: '抗疲劳，提升耐力，改善认知',
+                    bestTime: '空腹（饭前30分钟）',
+                    interactions: [],
+                    conflicts: ['stimulants'],
+                    recommend: '每日200-600mg，含3%红景天苷和1%水杨苷'
+                },
+                { 
+                    id: 'milk_thistle', 
+                    name: '奶蓟草', 
+                    icon: '🌸', 
+                    dosage: '250mg',
+                    dailyMax: '500mg',
+                    benefits: '肝脏保护，解毒，抗氧化',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日150-250mg标准化提取物（含80%水飞蓟素）'
+                },
+                { 
+                    id: 'tumeric', 
+                    name: '姜黄素', 
+                    icon: '🟡', 
+                    dosage: '500mg',
+                    dailyMax: '2000mg',
+                    benefits: '抗炎，关节健康，抗氧化',
+                    bestTime: '随餐服用',
+                    interactions: ['black_pepper'],
+                    conflicts: ['blood_thinners'],
+                    recommend: '每日500-1000mg，配合黑胡椒素提高吸收率20倍'
+                },
+                { 
+                    id: 'ginger', 
+                    name: '姜提取物', 
+                    icon: '🫚', 
+                    dosage: '500mg',
+                    dailyMax: '2000mg',
+                    benefits: '消化改善，止吐，抗炎',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['blood_thinners'],
+                    recommend: '每日250-500mg，孕期止吐需咨询医生'
+                },
+                { 
+                    id: 'echinacea', 
+                    name: '紫锥菊', 
+                    icon: '🌼', 
+                    dosage: '500mg',
+                    dailyMax: '1500mg',
+                    benefits: '免疫支持，预防感冒，缩短病程',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['autoimmune_conditions'],
+                    recommend: '感冒初期每日900-1500mg，连续使用不超过10天'
+                },
+                { 
+                    id: 'elderberry', 
+                    name: '接骨木', 
+                    icon: '🫐', 
+                    dosage: '500mg',
+                    dailyMax: '1500mg',
+                    benefits: '抗病毒，免疫支持，缓解感冒',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['autoimmune_conditions'],
+                    recommend: '感冒期间每日500-1000mg，浆果提取物效果更好'
+                },
+                { 
+                    id: 'spirulina', 
+                    name: '螺旋藻', 
+                    icon: '🌀', 
+                    dosage: '3g',
+                    dailyMax: '10g',
+                    benefits: '营养丰富，排毒，免疫支持',
+                    bestTime: '空腹或随餐',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日3-5g，富含蛋白质、维生素和矿物质'
+                },
+                { 
+                    id: 'chlorella', 
+                    name: '小球藻', 
+                    icon: '🟢', 
+                    dosage: '3g',
+                    dailyMax: '10g',
+                    benefits: '排毒，免疫支持，营养补充',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日3-5g，破壁产品吸收更好'
+                },
+                { 
+                    id: 'whey_protein', 
+                    name: '乳清蛋白', 
+                    icon: '🥛', 
+                    dosage: '25g',
+                    dailyMax: '50g',
+                    benefits: '肌肉合成，运动恢复，饱腹',
+                    bestTime: '运动后30分钟内',
+                    interactions: ['creatine'],
+                    conflicts: ['lactose_intolerance'],
+                    recommend: '每日20-30g，运动后或代餐使用'
+                },
+                { 
+                    id: 'casein', 
+                    name: '酪蛋白', 
+                    icon: '🧀', 
+                    dosage: '25g',
+                    dailyMax: '50g',
+                    benefits: '缓释蛋白，夜间修复，饱腹',
+                    bestTime: '睡前',
+                    interactions: [],
+                    conflicts: ['lactose_intolerance'],
+                    recommend: '睡前20-30g，缓慢释放氨基酸6-8小时'
+                },
+                { 
+                    id: 'plant_protein', 
+                    name: '植物蛋白', 
+                    icon: '🌱', 
+                    dosage: '25g',
+                    dailyMax: '50g',
+                    benefits: '素食蛋白，易消化，环保',
+                    bestTime: '任意时间',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '豌豆、大豆、大米蛋白混合，每日20-30g'
+                },
+                { 
+                    id: 'prebiotic', 
+                    name: '益生元', 
+                    icon: '🌾', 
+                    dosage: '5g',
+                    dailyMax: '15g',
+                    benefits: '益生菌食物，肠道健康，消化改善',
+                    bestTime: '随餐服用',
+                    interactions: ['probiotic'],
+                    conflicts: [],
+                    recommend: '菊粉、低聚果糖等，每日5-10g'
+                },
+                { 
+                    id: 'enzymes', 
+                    name: '消化酶', 
+                    icon: '🔬', 
+                    dosage: '1粒',
+                    dailyMax: '按说明',
+                    benefits: '帮助消化，减少胀气，营养吸收',
+                    bestTime: '餐中服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '含蛋白酶、淀粉酶、脂肪酶，大餐时服用'
+                },
+                { 
+                    id: 'fiber', 
+                    name: '膳食纤维', 
+                    icon: '🌾', 
+                    dosage: '5g',
+                    dailyMax: '15g',
+                    benefits: '肠道健康，血糖控制，饱腹感',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '洋车前子壳或菊粉，每日5-10g，多喝水'
+                },
+                { 
+                    id: 'psyllium', 
+                    name: '洋车前子', 
+                    icon: '🌾', 
+                    dosage: '5g',
+                    dailyMax: '15g',
+                    benefits: '肠道健康，胆固醇控制，血糖稳定',
+                    bestTime: '餐前或随餐',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日5-10g，必须配合大量水（至少250ml）'
+                },
+                { 
+                    id: 'glucosamine', 
+                    name: '氨基葡萄糖', 
+                    icon: '🦴', 
+                    dosage: '1500mg',
+                    dailyMax: '2000mg',
+                    benefits: '关节健康，软骨修复，减轻疼痛',
+                    bestTime: '随餐服用',
+                    interactions: ['chondroitin'],
+                    conflicts: ['shellfish_allergy'],
+                    recommend: '每日1500mg，配合软骨素效果更佳，需长期服用'
+                },
+                { 
+                    id: 'chondroitin', 
+                    name: '软骨素', 
+                    icon: '🦴', 
+                    dosage: '1200mg',
+                    dailyMax: '1600mg',
+                    benefits: '关节润滑，软骨保护，抗炎',
+                    bestTime: '随餐服用',
+                    interactions: ['glucosamine'],
+                    conflicts: [],
+                    recommend: '每日800-1200mg，与氨基葡萄糖搭配使用'
+                },
+                { 
+                    id: 'msm', 
+                    name: 'MSM', 
+                    icon: '💎', 
+                    dosage: '3000mg',
+                    dailyMax: '6000mg',
+                    benefits: '关节健康，抗炎，胶原蛋白合成',
+                    bestTime: '随餐服用',
+                    interactions: ['glucosamine', 'chondroitin'],
+                    conflicts: [],
+                    recommend: '每日2000-3000mg，可与其他关节补剂同用'
+                },
+                { 
+                    id: 'hyaluronic_acid', 
+                    name: '透明质酸', 
+                    icon: '💧', 
+                    dosage: '120mg',
+                    dailyMax: '240mg',
+                    benefits: '皮肤保湿，关节润滑，眼部健康',
+                    bestTime: '空腹或随餐',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日120-240mg，分子量低于100万道尔顿吸收更好'
+                },
+                { 
+                    id: 'silica', 
+                    name: '硅', 
+                    icon: '💎', 
+                    dosage: '10mg',
+                    dailyMax: '50mg',
+                    benefits: '骨骼健康，胶原蛋白合成，头发指甲',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日10-20mg，竹提取物或马尾巴草来源'
+                },
+                { 
+                    id: 'boron', 
+                    name: '硼', 
+                    icon: '⚪', 
+                    dosage: '3mg',
+                    dailyMax: '20mg',
+                    benefits: '骨骼健康，钙镁代谢，认知功能',
+                    bestTime: '随餐服用',
+                    interactions: ['calcium', 'magnesium', 'vitamin_d'],
+                    conflicts: [],
+                    recommend: '每日3mg即可，有助于钙和维生素D吸收'
+                },
+                { 
+                    id: 'nac', 
+                    name: 'N-乙酰半胱氨酸', 
+                    icon: '💊', 
+                    dosage: '600mg',
+                    dailyMax: '1800mg',
+                    benefits: '抗氧化，肝脏解毒，呼吸道健康',
+                    bestTime: '空腹或随餐',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日600-1200mg，是谷胱甘肽的前体'
+                },
+                { 
+                    id: 'taurine', 
+                    name: '牛磺酸', 
+                    icon: '🐂', 
+                    dosage: '1000mg',
+                    dailyMax: '3000mg',
+                    benefits: '心脏健康，电解质平衡，神经系统',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日500-2000mg，能量饮料中常见成分'
+                },
+                { 
+                    id: 'beta_alanine', 
+                    name: 'β-丙氨酸', 
+                    icon: '🏃', 
+                    dosage: '3g',
+                    dailyMax: '6g',
+                    benefits: '肌肉耐力，减少疲劳，运动表现',
+                    bestTime: '运动前或分次服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日3-6g，分次服用减少刺痛感'
+                },
+                { 
+                    id: 'citrulline', 
+                    name: '瓜氨酸', 
+                    icon: '🍉', 
+                    dosage: '6g',
+                    dailyMax: '10g',
+                    benefits: '一氧化氮生成，血管舒张，运动表现',
+                    bestTime: '运动前',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '运动前3-6g，比精氨酸更有效提升NO'
+                },
+                { 
+                    id: 'arginine', 
+                    name: '精氨酸', 
+                    icon: '💪', 
+                    dosage: '3g',
+                    dailyMax: '9g',
+                    benefits: '一氧化氮，血管健康，运动恢复',
+                    bestTime: '运动前或睡前',
+                    interactions: [],
+                    conflicts: ['herpes'], // 可能诱发疱疹
+                    recommend: '每日3-5g，睡前服用可促进生长激素分泌'
+                },
+                { 
+                    id: 'hmb', 
+                    name: 'HMB', 
+                    icon: '🏋️', 
+                    dosage: '3g',
+                    dailyMax: '6g',
+                    benefits: '肌肉保护，减少分解，促进合成',
+                    bestTime: '运动前后',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日3g，分次服用，适合减脂期保护肌肉'
+                },
+                { 
+                    id: 'zma', 
+                    name: 'ZMA', 
+                    icon: '💤', 
+                    dosage: '1份',
+                    dailyMax: '1份',
+                    benefits: '锌镁补充，睡眠质量，睾酮支持',
+                    bestTime: '睡前空腹',
+                    interactions: [],
+                    conflicts: ['calcium', 'dairy'], // 钙影响吸收
+                    recommend: '含锌30mg、镁450mg、B6 10.5mg，睡前服用'
+                },
+                { 
+                    id: 'dhea', 
+                    name: 'DHEA', 
+                    icon: '⚡', 
+                    dosage: '25mg',
+                    dailyMax: '50mg',
+                    benefits: '激素前体，抗衰老，能量水平',
+                    bestTime: '早晨随餐',
+                    interactions: [],
+                    conflicts: ['hormone_sensitive_conditions'],
+                    recommend: '每日25-50mg，40岁以上可考虑，需医生指导'
+                },
+                { 
+                    id: 'pregnenolone', 
+                    name: '孕烯醇酮', 
+                    icon: '🧬', 
+                    dosage: '30mg',
+                    dailyMax: '100mg',
+                    benefits: '激素前体，记忆改善，压力应对',
+                    bestTime: '早晨随餐',
+                    interactions: [],
+                    conflicts: ['hormone_sensitive_conditions'],
+                    recommend: '每日10-30mg，需在医生指导下使用'
+                },
+                { 
+                    id: 'pqq', 
+                    name: 'PQQ', 
+                    icon: '⚡', 
+                    dosage: '20mg',
+                    dailyMax: '40mg',
+                    benefits: '线粒体生成，认知功能，抗氧化',
+                    bestTime: '随餐服用',
+                    interactions: ['coq10'],
+                    conflicts: [],
+                    recommend: '每日10-20mg，与辅酶Q10协同效果更佳'
+                },
+                { 
+                    id: 'nmn', 
+                    name: 'NMN', 
+                    icon: '🧬', 
+                    dosage: '250mg',
+                    dailyMax: '1000mg',
+                    benefits: 'NAD+前体，抗衰老，能量代谢',
+                    bestTime: '早晨空腹',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日250-500mg，空腹吸收更好'
+                },
+                { 
+                    id: 'berberine', 
+                    name: '小檗碱', 
+                    icon: '🟡', 
+                    dosage: '500mg',
+                    dailyMax: '1500mg',
+                    benefits: '血糖控制，胆固醇管理，肠道健康',
+                    bestTime: '餐前服用',
+                    interactions: ['antibiotics', 'blood_pressure_meds'],
+                    conflicts: [],
+                    recommend: '每日500mg，每日3次，餐前服用效果最佳'
+                },
+                { 
+                    id: 'moringa', 
+                    name: '辣木', 
+                    icon: '🌿', 
+                    dosage: '500mg',
+                    dailyMax: '2000mg',
+                    benefits: '营养丰富，抗氧化，血糖控制',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日500-1000mg，富含维生素、矿物质和蛋白质'
+                },
+                { 
+                    id: 'maca', 
+                    name: '玛卡', 
+                    icon: '🥔', 
+                    dosage: '1500mg',
+                    dailyMax: '3000mg',
+                    benefits: '能量提升，性功能，激素平衡',
+                    bestTime: '早晨随餐',
+                    interactions: [],
+                    conflicts: ['hormone_sensitive_conditions'],
+                    recommend: '每日1500-3000mg，选择标准化提取物'
+                },
+                { 
+                    id: 'tongkat_ali', 
+                    name: '东革阿里', 
+                    icon: '🌳', 
+                    dosage: '200mg',
+                    dailyMax: '400mg',
+                    benefits: '睾酮支持，能量，运动表现',
+                    bestTime: '早晨随餐',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日200-400mg标准化提取物（含1%宽缨酮）'
+                },
+                { 
+                    id: 'fenugreek', 
+                    name: '葫芦巴', 
+                    icon: '🌿', 
+                    dosage: '500mg',
+                    dailyMax: '1500mg',
+                    benefits: '血糖控制，泌乳支持，睾酮',
+                    bestTime: '随餐服用',
+                    interactions: ['diabetes_meds'],
+                    conflicts: [],
+                    recommend: '每日500-1000mg，标准化提取物含4-羟基异亮氨酸'
+                },
+                { 
+                    id: 'saw_palmetto', 
+                    name: '锯棕榈', 
+                    icon: '🌴', 
+                    dosage: '320mg',
+                    dailyMax: '640mg',
+                    benefits: '前列腺健康，激素平衡，脱发',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['hormone_treatments'],
+                    recommend: '男性每日320mg标准化提取物（含85-95%脂肪酸）'
+                },
+                { 
+                    id: 'pygeum', 
+                    name: '非洲臀果木', 
+                    icon: '🌳', 
+                    dosage: '100mg',
+                    dailyMax: '200mg',
+                    benefits: '前列腺健康，泌尿功能',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日100mg标准化提取物，常与锯棕榈同用'
+                },
+                { 
+                    id: 'stinging_nettle', 
+                    name: '荨麻根', 
+                    icon: '🌿', 
+                    dosage: '300mg',
+                    dailyMax: '600mg',
+                    benefits: '前列腺健康，过敏缓解，关节',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['diuretics'],
+                    recommend: '每日300-600mg根提取物，含甾醇类化合物'
+                },
+                { 
+                    id: 'chasteberry', 
+                    name: '圣洁莓', 
+                    icon: '🍇', 
+                    dosage: '400mg',
+                    dailyMax: '800mg',
+                    benefits: '女性激素平衡，经前综合征，泌乳',
+                    bestTime: '早晨随餐',
+                    interactions: ['hormone_treatments'],
+                    conflicts: ['hormone_sensitive_conditions'],
+                    recommend: '女性每日400mg标准化提取物（含0.5%牡荆素）'
+                },
+                { 
+                    id: 'dong_quai', 
+                    name: '当归', 
+                    icon: '🌿', 
+                    dosage: '500mg',
+                    dailyMax: '1500mg',
+                    benefits: '女性健康，血液循环，月经调理',
+                    bestTime: '随餐服用',
+                    interactions: ['blood_thinners'],
+                    conflicts: ['pregnancy'],
+                    recommend: '每日500-1000mg，传统中药，孕期禁用'
+                },
+                { 
+                    id: 'black_cohosh', 
+                    name: '黑升麻', 
+                    icon: '🌿', 
+                    dosage: '40mg',
+                    dailyMax: '80mg',
+                    benefits: '更年期症状，激素平衡',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['liver_disease', 'hormone_sensitive_conditions'],
+                    recommend: '每日40mg标准化提取物，短期使用（不超过6个月）'
+                },
+                { 
+                    id: 'red_clover', 
+                    name: '红三叶草', 
+                    icon: '🌸', 
+                    dosage: '40mg',
+                    dailyMax: '80mg',
+                    benefits: '更年期症状，骨骼健康，心血管',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['hormone_sensitive_conditions'],
+                    recommend: '每日40-80mg异黄酮提取物，含植物雌激素'
+                },
+                { 
+                    id: 'evening_primrose', 
+                    name: '月见草油', 
+                    icon: '🌼', 
+                    dosage: '1000mg',
+                    dailyMax: '3000mg',
+                    benefits: '经前综合征，皮肤健康，抗炎',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['epilepsy', 'blood_thinners'],
+                    recommend: '每日1000-1500mg，含GLA（γ-亚麻酸）8-10%'
+                },
+                { 
+                    id: 'fish_collagen', 
+                    name: '鱼胶原蛋白', 
+                    icon: '🐟', 
+                    dosage: '5g',
+                    dailyMax: '10g',
+                    benefits: '皮肤弹性，关节健康，I型胶原',
+                    bestTime: '空腹或睡前',
+                    interactions: ['vitamin_c'],
+                    conflicts: [],
+                    recommend: '每日5-10g，分子量小于3000道尔顿吸收更好'
+                },
+                { 
+                    id: 'elastin', 
+                    name: '弹性蛋白', 
+                    icon: '✨', 
+                    dosage: '100mg',
+                    dailyMax: '300mg',
+                    benefits: '皮肤弹性，血管健康，结缔组织',
+                    bestTime: '随餐服用',
+                    interactions: ['collagen'],
+                    conflicts: [],
+                    recommend: '每日100-200mg，与胶原蛋白搭配效果更佳'
+                },
+                { 
+                    id: 'ceramide', 
+                    name: '神经酰胺', 
+                    icon: '💧', 
+                    dosage: '30mg',
+                    dailyMax: '60mg',
+                    benefits: '皮肤屏障，保湿，抗衰老',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日30mg，米糠或小麦来源，8-12周见效'
+                },
+                { 
+                    id: 'astaxanthin', 
+                    name: '虾青素', 
+                    icon: '🦐', 
+                    dosage: '12mg',
+                    dailyMax: '24mg',
+                    benefits: '超强抗氧化，皮肤保护，眼睛健康',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日4-12mg，雨生红球藻来源，随脂餐服用'
+                },
+                { 
+                    id: 'lycopene', 
+                    name: '番茄红素', 
+                    icon: '🍅', 
+                    dosage: '30mg',
+                    dailyMax: '60mg',
+                    benefits: '前列腺健康，抗氧化，心血管',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: [],
+                    recommend: '每日15-30mg，男性前列腺保健推荐'
+                },
+                { 
+                    id: 'lutein', 
+                    name: '叶黄素', 
+                    icon: '🌻', 
+                    dosage: '20mg',
+                    dailyMax: '40mg',
+                    benefits: '眼睛健康，黄斑保护，抗氧化',
+                    bestTime: '随餐服用',
+                    interactions: ['zeaxanthin'],
+                    conflicts: [],
+                    recommend: '每日10-20mg，配合玉米黄质2-4mg'
+                },
+                { 
+                    id: 'zeaxanthin', 
+                    name: '玉米黄质', 
+                    icon: '🌽', 
+                    dosage: '4mg',
+                    dailyMax: '8mg',
+                    benefits: '眼睛健康，黄斑保护，过滤蓝光',
+                    bestTime: '随餐服用',
+                    interactions: ['lutein'],
+                    conflicts: [],
+                    recommend: '每日2-4mg，与叶黄素5:1比例最佳'
+                },
+                { 
+                    id: 'bilberry', 
+                    name: '越橘', 
+                    icon: '🫐', 
+                    dosage: '160mg',
+                    dailyMax: '480mg',
+                    benefits: '眼睛健康，夜视力，微循环',
+                    bestTime: '随餐服用',
+                    interactions: [],
+                    conflicts: ['blood_thinners'],
+                    recommend: '每日160-320mg标准化提取物（含25%花青素）'
+                }
+            ]
+        };
+
+        // 食物搭配系统
+        const foodSynergies = {
+            positive: [
+                {
+                    foods: ['tomato', 'egg'],
+                    name: '番茄炒蛋',
+                    benefit: '番茄中的番茄红素是脂溶性的，与鸡蛋中的脂肪结合后吸收率提高3-5倍',
+                    bonus: { lycopene: 3.5, protein: 1.2 }
+                },
+                {
+                    foods: ['spinach', 'lemon'],
+                    name: '菠菜配柠檬',
+                    benefit: '柠檬中的维生素C能将菠菜中铁的吸收率提高2-3倍',
+                    bonus: { iron: 3, vitaminC: 1.5 }
+                },
+                {
+                    foods: ['broccoli', 'garlic'],
+                    name: '蒜蓉西兰花',
+                    benefit: '大蒜中的硫化物能增强西兰花的抗癌效果，协同作用更强',
+                    bonus: { antioxidants: 2, immunity: 1.5 }
+                },
+                {
+                    foods: ['salmon', 'broccoli'],
+                    name: '三文鱼配西兰花',
+                    benefit: 'Omega-3脂肪酸与西兰花中的萝卜硫素协同，抗炎效果更佳',
+                    bonus: { antiInflammatory: 2.5, heartHealth: 1.8 }
+                },
+                {
+                    foods: ['beef', 'pepper'],
+                    name: '青椒牛肉',
+                    benefit: '牛肉中的铁与青椒中的维生素C结合，铁吸收率提高4倍',
+                    bonus: { iron: 4, protein: 1.3 }
+                },
+                {
+                    foods: ['tofu', 'seaweed'],
+                    name: '豆腐海带汤',
+                    benefit: '豆腐中的钙与海带的矿物质协同，骨骼健康效果更佳',
+                    bonus: { calcium: 1.8, minerals: 1.5 }
+                },
+                {
+                    foods: ['carrot', 'avocado'],
+                    name: '胡萝卜牛油果',
+                    benefit: '牛油果中的健康脂肪帮助胡萝卜中β-胡萝卜素的吸收',
+                    bonus: { vitaminA: 3, healthyFats: 2 }
+                },
+                {
+                    foods: ['green_tea', 'lemon'],
+                    name: '柠檬绿茶',
+                    benefit: '柠檬中的维生素C保护绿茶中的儿茶素不被氧化，增强抗氧化效果',
+                    bonus: { antioxidants: 2.5, catechins: 1.8 }
+                },
+                {
+                    foods: ['yogurt', 'banana'],
+                    name: '酸奶香蕉',
+                    benefit: '酸奶中的益生菌与香蕉中的益生元协同，肠道健康效果翻倍',
+                    bonus: { gutHealth: 2.5, digestion: 1.8 }
+                },
+                {
+                    foods: ['turmeric', 'black_pepper'],
+                    name: '姜黄黑胡椒',
+                    benefit: '黑胡椒中的胡椒碱能将姜黄素的吸收率提高2000%',
+                    bonus: { curcumin: 20, antiInflammatory: 3 }
+                }
+            ],
+            negative: [
+                {
+                    foods: ['spinach', 'tofu'],
+                    name: '菠菜豆腐',
+                    warning: '菠菜中的草酸与豆腐中的钙结合形成草酸钙，影响钙吸收',
+                    penalty: { calcium: 0.6, iron: 0.7 },
+                    solution: '建议间隔2小时食用，或将菠菜焯水去除草酸'
+                },
+                {
+                    foods: ['tea', 'iron_rich_food'],
+                    name: '茶与高铁食物',
+                    warning: '茶中的单宁酸会与铁结合，降低铁的吸收率50-70%',
+                    penalty: { iron: 0.3 },
+                    solution: '建议餐后1小时再饮茶，或搭配维生素C丰富的食物'
+                },
+                {
+                    foods: ['milk', 'orange'],
+                    name: '牛奶配橙子',
+                    warning: '橙子中的果酸会使牛奶蛋白质凝结，可能引起消化不良',
+                    penalty: { digestion: 0.7, protein: 0.8 },
+                    solution: '建议间隔30分钟食用'
+                },
+                {
+                    foods: ['cucumber', 'tomato'],
+                    name: '黄瓜番茄',
+                    warning: '黄瓜中的维生素C分解酶会破坏番茄中的维生素C',
+                    penalty: { vitaminC: 0.5 },
+                    solution: '建议分开食用，或加入醋抑制酶活性'
+                },
+                {
+                    foods: ['pumpkin', 'spinach'],
+                    name: '南瓜菠菜',
+                    warning: '两者都富含草酸和植酸，过量同食可能影响矿物质吸收',
+                    penalty: { minerals: 0.7 },
+                    solution: '适量食用，搭配维生素C丰富的食物'
+                }
+            ]
+        };
+
+        // 游戏数据 - 丰富的运动库
+        const exercises = {
+            aerobic: [
+                { id: 'walk', name: '散步', icon: '🚶', calories: 200, cardio: 5, energy: -10 },
+                { id: 'jog', name: '慢跑', icon: '🏃', calories: 400, cardio: 8, energy: -20 },
+                { id: 'swim', name: '游泳', icon: '🏊', calories: 500, cardio: 10, energy: -25 },
+                { id: 'cycle', name: '骑行', icon: '🚴', calories: 350, cardio: 7, energy: -18 },
+                { id: 'yoga', name: '瑜伽', icon: '🧘', calories: 150, cardio: 3, energy: -8 },
+                { id: 'hike', name: '徒步', icon: '🥾', calories: 450, cardio: 8, energy: -22 },
+                { id: 'dance', name: '跳舞', icon: '💃', calories: 300, cardio: 6, energy: -15 },
+                { id: 'aerobics', name: '有氧操', icon: '🤸', calories: 350, cardio: 7, energy: -18 },
+                { id: 'elliptical', name: '椭圆机', icon: '🏃', calories: 400, cardio: 7, energy: -18 },
+                { id: 'rowing', name: '划船', icon: '🚣', calories: 450, cardio: 8, energy: -20 },
+                { id: 'skipping', name: '跳绳', icon: '🪢', calories: 600, cardio: 10, energy: -28 },
+                { id: 'skate', name: '滑冰', icon: '⛸️', calories: 380, cardio: 7, energy: -17 },
+                { id: 'ski', name: '滑雪', icon: '⛷️', calories: 400, cardio: 8, energy: -20 },
+                { id: 'boxing', name: '拳击', icon: '🥊', calories: 550, cardio: 9, energy: -25 },
+                { id: 'badminton', name: '羽毛球', icon: '🏸', calories: 300, cardio: 6, energy: -15 },
+                { id: 'tennis', name: '网球', icon: '🎾', calories: 400, cardio: 8, energy: -20 },
+                { id: 'basketball', name: '篮球', icon: '🏀', calories: 450, cardio: 8, energy: -22 },
+                { id: 'soccer', name: '足球', icon: '⚽', calories: 500, cardio: 9, energy: -25 },
+                { id: 'volleyball', name: '排球', icon: '🏐', calories: 300, cardio: 6, energy: -15 },
+                { id: 'table_tennis', name: '乒乓球', icon: '🏓', calories: 250, cardio: 5, energy: -12 }
+            ],
+            strength: [
+                { id: 'pushup', name: '俯卧撑', icon: '💪', calories: 300, strength: 8, energy: -20 },
+                { id: 'squat', name: '深蹲', icon: '🦵', calories: 350, strength: 9, energy: -22 },
+                { id: 'dumbbell', name: '哑铃', icon: '🏋️', calories: 250, strength: 10, energy: -18 },
+                { id: 'plank', name: '平板支撑', icon: '📏', calories: 200, strength: 7, energy: -15 },
+                { id: 'pullup', name: '引体向上', icon: '🤸', calories: 400, strength: 10, energy: -25 },
+                { id: 'situp', name: '仰卧起坐', icon: '🏋️', calories: 250, strength: 6, energy: -15 },
+                { id: 'lunge', name: '弓步蹲', icon: '🦵', calories: 300, strength: 8, energy: -18 },
+                { id: 'deadlift', name: '硬拉', icon: '🏋️', calories: 400, strength: 10, energy: -25 },
+                { id: 'bench_press', name: '卧推', icon: '🏋️', calories: 350, strength: 9, energy: -22 },
+                { id: 'kettlebell', name: '壶铃', icon: '🏋️', calories: 400, strength: 9, energy: -23 },
+                { id: 'resistance_band', name: '弹力带', icon: '🏋️', calories: 200, strength: 6, energy: -14 },
+                { id: 'trx', name: 'TRX训练', icon: '🏋️', calories: 300, strength: 8, energy: -18 },
+                { id: 'pilates', name: '普拉提', icon: '🧘', calories: 200, strength: 6, energy: -14 },
+                { id: 'barbell', name: '杠铃', icon: '🏋️', calories: 380, strength: 10, energy: -24 },
+                { id: 'calisthenics', name: '街头健身', icon: '🤸', calories: 350, strength: 9, energy: -22 }
+            ],
+            flexibility: [
+                { id: 'stretching', name: '拉伸', icon: '🧘', calories: 100, cardio: 2, energy: -5 },
+                { id: 'tai_chi', name: '太极', icon: '☯️', calories: 150, cardio: 3, energy: -8 },
+                { id: 'qi_gong', name: '气功', icon: '☯️', calories: 120, cardio: 2, energy: -6 },
+                { id: 'foam_rolling', name: '泡沫轴', icon: '🌀', calories: 80, cardio: 1, energy: -4 },
+                { id: 'mobility', name: '灵活性训练', icon: '🤸', calories: 120, cardio: 2, energy: -6 }
+            ]
+        };
+
+        const achievements = [
+            // 饮食类成就
+            { id: 'first_food', name: '初尝美食', desc: '第一次选择食物', icon: '🍽️', category: 'diet' },
+            { id: 'food_explorer', name: '美食探索家', desc: '累计选择20种不同食物', icon: '🍱', category: 'diet' },
+            { id: 'food_master', name: '美食大师', desc: '累计选择50种不同食物', icon: '👨‍�', category: 'diet' },
+            { id: 'balanced_meal', name: '营养均衡', desc: '一天内选择3种不同类别的食物', icon: '⚖️', category: 'diet' },
+            { id: 'rainbow_diet', name: '彩虹饮食', desc: '一天内选择5种不同颜色的食物', icon: '🌈', category: 'diet' },
+            { id: 'protein_king', name: '蛋白质之王', desc: '单日蛋白质摄入超过100g', icon: '🥩', category: 'diet' },
+            { id: 'veggie_lover', name: '蔬菜爱好者', desc: '单日选择5种不同蔬菜', icon: '🥬', category: 'diet' },
+            { id: 'fruit_fanatic', name: '水果狂热者', desc: '单日选择5种不同水果', icon: '🍎', category: 'diet' },
+            { id: 'hydration_master', name: '补水达人', desc: '单日饮水超过3000ml', icon: '💧', category: 'diet' },
+            { id: 'tea_time', name: '茶道高手', desc: '累计选择绿茶10次', icon: '🍵', category: 'diet' },
+            { id: 'coffee_addict', name: '咖啡成瘾', desc: '累计选择咖啡10次', icon: '☕', category: 'diet' },
+            { id: 'no_junk_food', name: '健康饮食', desc: '连续3天不选择汽水', icon: '🥗', category: 'diet' },
+            { id: 'grains_master', name: '主食达人', desc: '累计选择10种不同主食', icon: '🍚', category: 'diet' },
+            { id: 'nuts_collector', name: '坚果收藏家', desc: '累计选择5种不同坚果', icon: '🌰', category: 'diet' },
+            { id: 'seafood_lover', name: '海鲜爱好者', desc: '累计选择虾、鱼、蟹、龙虾各3次', icon: '🦐', category: 'diet' },
+
+            // 运动类成就
+            { id: 'first_exercise', name: '动起来', desc: '第一次选择运动', icon: '�', category: 'exercise' },
+            { id: 'exercise_streak', name: '坚持运动', desc: '连续3天进行运动', icon: '🔥', category: 'exercise' },
+            { id: 'exercise_master', name: '运动大师', desc: '连续7天进行运动', icon: '💪', category: 'exercise' },
+            { id: 'calorie_burner', name: '卡路里燃烧者', desc: '单日运动消耗超过500千卡', icon: '🔥', category: 'exercise' },
+            { id: 'marathon_runner', name: '马拉松选手', desc: '累计跑步（慢跑）超过10小时', icon: '🏃', category: 'exercise' },
+            { id: 'swimmer', name: '游泳健将', desc: '累计游泳超过5小时', icon: '🏊', category: 'exercise' },
+            { id: 'cyclist', name: '骑行达人', desc: '累计骑行超过10小时', icon: '🚴', category: 'exercise' },
+            { id: 'yoga_master', name: '瑜伽大师', desc: '累计瑜伽超过5小时', icon: '🧘', category: 'exercise' },
+            { id: 'strength_freak', name: '力量狂人', desc: '单日进行3种不同力量训练', icon: '🏋️', category: 'exercise' },
+            { id: 'cardio_king', name: '有氧之王', desc: '单日进行3种不同有氧运动', icon: '❤️', category: 'exercise' },
+            { id: 'variety_athlete', name: '全能运动员', desc: '一天内进行有氧、力量、柔韧性训练', icon: '🏆', category: 'exercise' },
+            { id: 'morning_exercise', name: '晨练达人', desc: '连续5天进行运动（游戏内逻辑）', icon: '🌅', category: 'exercise' },
+            { id: 'team_player', name: '团队运动', desc: '累计进行篮球、足球、排球各3次', icon: '⚽', category: 'exercise' },
+            { id: 'racket_sports', name: '球拍运动', desc: '累计进行羽毛球、网球、乒乓球各3次', icon: '🏸', category: 'exercise' },
+            { id: 'winter_sports', name: '冬季运动', desc: '累计滑雪和滑冰各3次', icon: '⛷️', category: 'exercise' },
+            { id: 'boxing_champ', name: '拳击冠军', desc: '累计拳击超过3小时', icon: '🥊', category: 'exercise' },
+            { id: 'pilates_pro', name: '普拉提专家', desc: '累计普拉提超过3小时', icon: '🤸', category: 'exercise' },
+            { id: 'jump_rope', name: '跳绳高手', desc: '累计跳绳超过3小时', icon: '🪢', category: 'exercise' },
+
+            // 生活方式类成就
+            { id: 'early_bird', name: '早起鸟', desc: '连续3天保持8小时睡眠', icon: '🐦', category: 'lifestyle' },
+            { id: 'sleep_master', name: '睡眠大师', desc: '连续7天保持7-9小时睡眠', icon: '😴', category: 'lifestyle' },
+            { id: 'stress_free', name: '零压力', desc: '单日压力值为0', icon: '😌', category: 'lifestyle' },
+            { id: 'energy_full', name: '精力充沛', desc: '精力值达到100', icon: '⚡', category: 'lifestyle' },
+            { id: 'happy_day', name: '快乐的一天', desc: '心情值达到100', icon: '😊', category: 'lifestyle' },
+            { id: 'balanced_life', name: '平衡生活', desc: '精力、心情、力量、心肺都超过70', icon: '☯️', category: 'lifestyle' },
+
+            // 进度类成就
+            { id: 'week_complete', name: '一周达成', desc: '完成第7天', icon: '📅', category: 'progress' },
+            { id: 'halfway', name: '半程冠军', desc: '完成第10天', icon: '🏆', category: 'progress' },
+            { id: 'two_weeks', name: '两周坚持', desc: '完成第14天', icon: '📆', category: 'progress' },
+            { id: 'completion', name: '坚持到底', desc: '完成21天挑战', icon: '🎉', category: 'progress' },
+            { id: 'perfect_week', name: '完美一周', desc: '连续7天评分达到A级以上', icon: '✨', category: 'progress' },
+
+            // 评分类成就
+            { id: 'first_score', name: '初次评分', desc: '完成第一天获得评分', icon: '📝', category: 'score' },
+            { id: 'high_score', name: '高分表现', desc: '单日评分达到A级', icon: '⭐', category: 'score' },
+            { id: 'perfect_day', name: '完美一天', desc: '单日评分达到S级', icon: '💎', category: 'score' },
+            { id: 'consistent_b', name: '稳定发挥', desc: '连续5天评分达到B级以上', icon: '📊', category: 'score' },
+            { id: 'consistent_a', name: '优秀表现', desc: '连续5天评分达到A级以上', icon: '🌟', category: 'score' },
+            { id: 'diet_expert', name: '饮食专家', desc: '单日饮食评分达到A级', icon: '🥗', category: 'score' },
+            { id: 'exercise_expert', name: '运动专家', desc: '单日运动评分达到A级', icon: '🏃', category: 'score' },
+
+            // 体重管理类成就
+            { id: 'weight_loss_start', name: '减重开始', desc: '体重减少1kg', icon: '📉', category: 'weight' },
+            { id: 'weight_loss_3kg', name: '减重达人', desc: '体重减少3kg', icon: '⚖️', category: 'weight' },
+            { id: 'weight_loss_5kg', name: '减重专家', desc: '体重减少5kg', icon: '🎯', category: 'weight' },
+            { id: 'weight_gain_start', name: '增重开始', desc: '体重增加1kg', icon: '📈', category: 'weight' },
+            { id: 'weight_gain_3kg', name: '增重达人', desc: '体重增加3kg', icon: '💪', category: 'weight' },
+            { id: 'weight_stable', name: '体重稳定', desc: '连续7天体重变化不超过0.5kg', icon: '📊', category: 'weight' },
+            { id: 'bmi_normal', name: '健康体重', desc: 'BMI达到正常范围(18.5-24)', icon: '🏥', category: 'weight' },
+
+            // 特殊成就
+            { id: 'first_day', name: '第一天', desc: '完成第一天', icon: '1️⃣', category: 'special' },
+            { id: 'comeback', name: '东山再起', desc: '从F级评分提升到A级', icon: '📈', category: 'special' },
+            { id: 'jack_of_all', name: '全能选手', desc: '解锁至少20个不同类别的成就', icon: '🎭', category: 'special' },
+            { id: 'collector', name: '成就收藏家', desc: '解锁50个成就', icon: '�', category: 'special' },
+            { id: 'completionist', name: '完美主义者', desc: '解锁所有成就', icon: '👑', category: 'special' }
+        ];
+
+        // 语言文件
+        const i18n = {
+            zh: {
+                gameTitle: '健康生活模拟器',
+                welcome: '欢迎来到健康生活模拟器',
+                subtitle: '通过21天的游戏周期，学习科学的健康知识，培养健康的生活习惯。',
+                startGame: '🎮 开始新游戏',
+                achievements: '🏆 查看成就',
+                continueGame: '继续游戏',
+                settings: '设置',
+                quit: '退出',
+                createCharacter: '创建角色',
+                characterName: '角色名称',
+                gender: '性别',
+                male: '男',
+                female: '女',
+                height: '身高 (cm)',
+                weight: '体重 (kg)',
+                age: '年龄',
+                goal: '健康目标',
+                loseWeight: '减脂',
+                maintain: '维持体重',
+                gainMuscle: '增肌',
+                initialStats: '初始状态设定',
+                initialStatsDesc: '根据你今天的实际情况设定初始数值',
+                energy: '精力',
+                mood: '心情',
+                strength: '力量',
+                cardio: '心肺',
+                tired: '疲惫',
+                energetic: '充沛',
+                low: '低落',
+                happy: '愉悦',
+                weak: '虚弱',
+                strong: '强壮',
+                poor: '较差',
+                excellent: '优秀',
+                back: '返回',
+                create: '✨ 创建角色',
+                day: '第 {day} 天',
+                phase: '第 {phase} 阶段',
+                currentWeight: '当前体重',
+                diet: '🍎 饮食安排',
+                exercise: '🏃 运动计划',
+                supplement: '💊 选择补剂',
+                endDay: '🌙 结束今天',
+                recordMood: '💝 记录心情，获取祝福',
+                recordMoodDesc: '记录你今天的心情，获得专属祝福',
+                overallScore: '综合评分',
+                dietScore: '饮食评分',
+                exerciseScore: '运动评分',
+                supplementScore: '补剂评分',
+                nextDay: '继续下一天',
+                foodSynergy: '🌟 食物搭配建议',
+                foodConflict: '⚠️ 食物搭配禁忌',
+                supplementFeedback: '💊 补剂使用反馈',
+                musicOn: '🔊 音乐开',
+                musicOff: '🔇 音乐关',
+                language: '🌐 语言',
+                selectFood: '🍎 选择食物',
+                selectExercise: '🏃 选择运动',
+                selectSupplement: '💊 选择营养补剂',
+                noFood: '还没有选择食物',
+                noExercise: '还没有选择运动',
+                noSupplement: '还没有选择补剂',
+                selected: '已选择',
+                totalCalories: '总热量',
+                calories: '千卡',
+                minutes: '分钟',
+                grams: '克',
+                complete: '完成',
+                perfect: '完美',
+                good: '良好',
+                pass: '及格',
+                poor: '较差',
+                fail: '不及格',
+                demoNotice: '这是演示版本，完整版请使用Electron运行。当前可以体验核心游戏流程！',
+                grains: '🌾 主食',
+                proteins: '🥩 蛋白质',
+                vegetables: '🥬 蔬菜',
+                fruits: '🍎 水果',
+                nuts: '🌰 坚果',
+                beverages: '🥤 饮品',
+                aerobic: '🔥 有氧运动',
+                strengthTraining: '💪 力量训练',
+                flexibility: '🧘 柔韧性训练',
+                vitamins: '🍊 维生素',
+                minerals: '🥛 矿物质',
+                others: '✨ 其他补剂',
+                // 新增翻译键
+                dayText: '第',
+                dayUnit: '天',
+                phaseText: '第',
+                phaseUnit: '阶段',
+                energyLabel: '精力',
+                moodLabel: '心情',
+                strengthLabel: '力量',
+                cardioLabel: '心肺',
+                todayNutrition: '📊 今日营养摄入',
+                caloriesLabel: '热量',
+                todayMoodTitle: '😊 今日心情',
+                todayMoodDesc: '记录你今天的心情，获得专属祝福',
+                recordMoodBtn: '💝 记录心情，获取祝福',
+                todaySupplement: '💊 今日补剂',
+                supplementDesc: '选择合适的营养补剂，注意剂量和相互作用',
+                noSupplementSelected: '还没有选择补剂',
+                selectSupplementBtn: '💊 选择补剂',
+                dietBtn: '🍎 饮食安排',
+                exerciseBtn: '🏃 运动计划',
+                endDayBtn: '🌙 结束今天',
+                selectFoodTitle: '🍎 选择食物',
+                noFoodSelected: '还没有选择食物',
+                grainsTitle: '🌾 主食',
+                proteinsTitle: '🥩 蛋白质',
+                vegetablesTitle: '🥬 蔬菜',
+                fruitsTitle: '🍎 水果',
+                nutsTitle: '🌰 坚果',
+                beveragesTitle: '🥤 饮品',
+                completeBtn: '完成',
+                selectExerciseTitle: '🏃 选择运动',
+                noExerciseSelected: '还没有选择运动',
+                aerobicTitle: '🔥 有氧运动',
+                strengthTitle: '💪 力量训练',
+                flexibilityTitle: '🧘 柔韧性训练',
+                selectSupplementTitle: '💊 选择营养补剂',
+                noSupplementSelected2: '还没有选择补剂',
+                supplementWarnings: '⚠️ 注意事项',
+                vitaminsTitle: '🍊 维生素',
+                mineralsTitle: '🥛 矿物质',
+                othersTitle: '✨ 其他补剂',
+                gradeGood: '良好',
+                overallScoreLabel: '综合评分',
+                dietScoreLabel: '饮食评分',
+                exerciseScoreLabel: '运动评分',
+                supplementScoreLabel: '补剂评分',
+                foodSynergyTitle: '🌟 食物搭配建议',
+                foodConflictTitle: '⚠️ 食物搭配禁忌',
+                supplementFeedbackTitle: '💊 补剂使用反馈',
+                achievementUnlockTitle: '🏆 解锁成就',
+                nextDayBtn: '继续下一天',
+                achievementsTitle: '🏆 成就系统',
+                filterAll: '全部',
+                filterDiet: '🍽️ 饮食',
+                filterExercise: '🏃 运动',
+                filterLifestyle: '😊 生活',
+                filterProgress: '📅 进度',
+                filterScore: '⭐ 评分',
+                filterWeight: '⚖️ 体重',
+                filterSpecial: '👑 特殊',
+                backBtn: '返回',
+                gradeExcellent: '优秀',
+                gameCompleteTitle: '🎉 游戏完成！',
+                gameCompleteDesc: '恭喜你完成了21天的健康养成计划！',
+                finalScoreLabel: '最终评分',
+                finalWeightLabel: '最终体重(kg)',
+                finalAchievementsLabel: '解锁成就',
+                restartBtn: '🔄 重新开始',
+                // 评级
+                gradeS: '完美',
+                gradeA: '优秀',
+                gradeB: '良好',
+                gradeC: '及格',
+                gradeD: '较差',
+                gradeF: '不及格',
+                // 成就状态
+                unlocked: '已解锁',
+                locked: '未解锁',
+                // 其他
+                demoSubtitle: '浏览器演示版 - 体验健康养成游戏的乐趣',
+                clearSave: '🗑️ 清除存档'
+            },
+            en: {
+                gameTitle: 'Health Life Simulator',
+                welcome: 'Welcome to Health Life Simulator',
+                subtitle: 'Learn scientific health knowledge and develop healthy habits through a 21-day game cycle.',
+                startGame: '🎮 Start New Game',
+                achievements: '🏆 Achievements',
+                continueGame: 'Continue Game',
+                settings: 'Settings',
+                quit: 'Quit',
+                createCharacter: 'Create Character',
+                characterName: 'Character Name',
+                gender: 'Gender',
+                male: 'Male',
+                female: 'Female',
+                height: 'Height (cm)',
+                weight: 'Weight (kg)',
+                age: 'Age',
+                goal: 'Health Goal',
+                loseWeight: 'Lose Weight',
+                maintain: 'Maintain',
+                gainMuscle: 'Gain Muscle',
+                initialStats: 'Initial Stats',
+                initialStatsDesc: 'Set initial values based on your actual condition today',
+                energy: 'Energy',
+                mood: 'Mood',
+                strength: 'Strength',
+                cardio: 'Cardio',
+                tired: 'Tired',
+                energetic: 'Energetic',
+                low: 'Low',
+                happy: 'Happy',
+                weak: 'Weak',
+                strong: 'Strong',
+                poor: 'Poor',
+                excellent: 'Excellent',
+                back: 'Back',
+                create: '✨ Create Character',
+                day: 'Day {day}',
+                phase: 'Phase {phase}',
+                currentWeight: 'Current Weight',
+                diet: '🍎 Diet',
+                exercise: '🏃 Exercise',
+                supplement: '💊 Supplements',
+                endDay: '🌙 End Day',
+                recordMood: '💝 Record Mood',
+                recordMoodDesc: 'Record your mood today and receive a blessing',
+                overallScore: 'Overall Score',
+                dietScore: 'Diet Score',
+                exerciseScore: 'Exercise Score',
+                supplementScore: 'Supplement Score',
+                nextDay: 'Next Day',
+                foodSynergy: '🌟 Food Synergy Tips',
+                foodConflict: '⚠️ Food Conflict Warning',
+                supplementFeedback: '💊 Supplement Feedback',
+                musicOn: '🔊 Music On',
+                musicOff: '🔇 Music Off',
+                language: '🌐 Language',
+                selectFood: '🍎 Select Food',
+                selectExercise: '🏃 Select Exercise',
+                selectSupplement: '💊 Select Supplements',
+                noFood: 'No food selected yet',
+                noExercise: 'No exercise selected yet',
+                noSupplement: 'No supplement selected yet',
+                selected: 'Selected',
+                totalCalories: 'Total Calories',
+                calories: 'kcal',
+                minutes: 'min',
+                grams: 'g',
+                complete: 'Complete',
+                perfect: 'Perfect',
+                excellent: 'Excellent',
+                good: 'Good',
+                pass: 'Pass',
+                poor: 'Poor',
+                fail: 'Fail',
+                demoNotice: 'This is a demo version. Full version available with Electron. Experience the core gameplay now!',
+                grains: '🌾 Grains',
+                proteins: '🥩 Proteins',
+                vegetables: '🥬 Vegetables',
+                fruits: '🍎 Fruits',
+                nuts: '🌰 Nuts',
+                beverages: '🥤 Beverages',
+                aerobic: '🔥 Aerobic Exercise',
+                strengthTraining: '💪 Strength Training',
+                flexibility: '🧘 Flexibility',
+                vitamins: '🍊 Vitamins',
+                minerals: '🥛 Minerals',
+                others: '✨ Others',
+                // New translation keys
+                dayText: 'Day',
+                dayUnit: '',
+                phaseText: 'Phase',
+                phaseUnit: '',
+                energyLabel: 'Energy',
+                moodLabel: 'Mood',
+                strengthLabel: 'Strength',
+                cardioLabel: 'Cardio',
+                todayNutrition: '📊 Today\'s Nutrition',
+                caloriesLabel: 'Calories',
+                todayMoodTitle: '😊 Today\'s Mood',
+                todayMoodDesc: 'Record your mood today and receive a blessing',
+                recordMoodBtn: '💝 Record Mood & Get Blessing',
+                todaySupplement: '💊 Today\'s Supplements',
+                supplementDesc: 'Choose appropriate supplements, pay attention to dosage and interactions',
+                noSupplementSelected: 'No supplement selected yet',
+                selectSupplementBtn: '💊 Select Supplements',
+                dietBtn: '🍎 Diet Plan',
+                exerciseBtn: '🏃 Exercise Plan',
+                endDayBtn: '🌙 End Day',
+                selectFoodTitle: '🍎 Select Food',
+                noFoodSelected: 'No food selected yet',
+                grainsTitle: '🌾 Grains',
+                proteinsTitle: '🥩 Proteins',
+                vegetablesTitle: '🥬 Vegetables',
+                fruitsTitle: '🍎 Fruits',
+                nutsTitle: '🌰 Nuts',
+                beveragesTitle: '🥤 Beverages',
+                completeBtn: 'Complete',
+                selectExerciseTitle: '🏃 Select Exercise',
+                noExerciseSelected: 'No exercise selected yet',
+                aerobicTitle: '🔥 Aerobic Exercise',
+                strengthTitle: '💪 Strength Training',
+                flexibilityTitle: '🧘 Flexibility Training',
+                selectSupplementTitle: '💊 Select Supplements',
+                noSupplementSelected2: 'No supplement selected yet',
+                supplementWarnings: '⚠️ Warnings',
+                vitaminsTitle: '🍊 Vitamins',
+                mineralsTitle: '🥛 Minerals',
+                othersTitle: '✨ Others',
+                gradeGood: 'Good',
+                overallScoreLabel: 'Overall Score',
+                dietScoreLabel: 'Diet Score',
+                exerciseScoreLabel: 'Exercise Score',
+                supplementScoreLabel: 'Supplement Score',
+                foodSynergyTitle: '🌟 Food Synergy Tips',
+                foodConflictTitle: '⚠️ Food Conflict Warning',
+                supplementFeedbackTitle: '💊 Supplement Feedback',
+                achievementUnlockTitle: '🏆 Achievement Unlocked',
+                nextDayBtn: 'Next Day',
+                achievementsTitle: '🏆 Achievements',
+                filterAll: 'All',
+                filterDiet: '🍽️ Diet',
+                filterExercise: '🏃 Exercise',
+                filterLifestyle: '😊 Lifestyle',
+                filterProgress: '📅 Progress',
+                filterScore: '⭐ Score',
+                filterWeight: '⚖️ Weight',
+                filterSpecial: '👑 Special',
+                backBtn: 'Back',
+                gradeExcellent: 'Excellent',
+                gameCompleteTitle: '🎉 Game Complete!',
+                gameCompleteDesc: 'Congratulations on completing the 21-day health challenge!',
+                finalScoreLabel: 'Final Score',
+                finalWeightLabel: 'Final Weight (kg)',
+                finalAchievementsLabel: 'Achievements Unlocked',
+                restartBtn: '🔄 Restart',
+                // Grades
+                gradeS: 'Perfect',
+                gradeA: 'Excellent',
+                gradeB: 'Good',
+                gradeC: 'Pass',
+                gradeD: 'Poor',
+                gradeF: 'Fail',
+                // Achievement status
+                unlocked: 'Unlocked',
+                locked: 'Locked',
+                // Others
+                demoSubtitle: 'Browser Demo - Experience the Health Game',
+                clearSave: '🗑️ Clear Save'
+            }
+        };
+
+        // 当前语言
+        let currentLanguage = 'zh';
+
+        // 音频控制
+        let bgMusic = null;
+        let isMusicPlaying = false;
+
+        // 初始化音频
+        function initAudio() {
+            bgMusic = new Audio('健康生活模拟器（游戏主题曲）.mp3');
+            bgMusic.loop = true;
+            bgMusic.volume = 0.5;
+        }
+
+        // 播放音乐（自动播放，带降级处理）
+        function playMusic() {
+            if (!bgMusic) initAudio();
+            if (!isMusicPlaying) {
+                bgMusic.play().then(() => {
+                    isMusicPlaying = true;
+                    document.getElementById('music-btn').innerHTML = getText('musicOn');
+                    document.getElementById('music-btn').classList.add('active');
+                }).catch(e => {
+                    // 自动播放被阻止，等待用户交互
+                    console.log('Auto-play blocked, waiting for user interaction');
+                });
+            }
+        }
+
+        // 页面加载完成后尝试自动播放
+        window.addEventListener('load', function() {
+            setTimeout(playMusic, 500);
+        });
+
+        // 切换音乐
+        function toggleMusic() {
+            if (!bgMusic) initAudio();
+            
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                isMusicPlaying = false;
+                document.getElementById('music-btn').innerHTML = getText('musicOff');
+                document.getElementById('music-btn').classList.remove('active');
+            } else {
+                bgMusic.play().catch(e => console.log('Audio play failed:', e));
+                isMusicPlaying = true;
+                document.getElementById('music-btn').innerHTML = getText('musicOn');
+                document.getElementById('music-btn').classList.add('active');
+            }
+        }
+
+        // 切换语言
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'zh' ? 'en' : 'zh';
+            document.getElementById('lang-btn').textContent = currentLanguage === 'zh' ? '🌐 中文' : '🌐 English';
+            updateLanguage();
+        }
+
+        // 获取文本
+        function getText(key) {
+            return i18n[currentLanguage][key] || key;
+        }
+
+        // 更新界面语言
+        function updateLanguage() {
+            // 更新所有带有 data-lang 属性的元素
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                const key = el.getAttribute('data-lang');
+                if (i18n[currentLanguage][key]) {
+                    el.textContent = i18n[currentLanguage][key];
+                }
+            });
+
+            // 更新标题
+            document.title = getText('gameTitle');
+
+            // 更新按钮文本
+            const musicBtn = document.getElementById('music-btn');
+            if (musicBtn) {
+                musicBtn.innerHTML = isMusicPlaying ? getText('musicOn') : getText('musicOff');
+            }
+
+            // 重新渲染食物、运动和补剂列表以更新语言
+            initFoods();
+            initExercises();
+            initSupplements();
+            
+            // 更新已选项目的显示
+            updateSelectedFoods();
+            updateSelectedExercises();
+            updateSelectedSupplements();
+        }
+
+        // 游戏状态
+        let gameState = {
+            character: null,
+            day: 1,
+            phase: 1,
+            todayFoods: [],
+            todayExercises: [],
+            todaySupplements: [],
+            unlockedAchievements: new Set(),
+            dailyLogs: []
+        };
+
+        // 本地存储键名
+        const SAVE_KEY = 'healthLifeSimulator_save';
+
+        // 保存游戏数据到本地存储
+        function saveGame() {
+            try {
+                const saveData = {
+                    character: gameState.character,
+                    day: gameState.day,
+                    phase: gameState.phase,
+                    todayFoods: gameState.todayFoods,
+                    todayExercises: gameState.todayExercises,
+                    todaySupplements: gameState.todaySupplements,
+                    unlockedAchievements: Array.from(gameState.unlockedAchievements),
+                    dailyLogs: gameState.dailyLogs,
+                    saveTime: new Date().toISOString()
+                };
+                localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+                console.log('游戏已保存');
+            } catch (e) {
+                console.error('保存游戏失败:', e);
+            }
+        }
+
+        // 从本地存储加载游戏数据
+        function loadGame() {
+            try {
+                const saveData = localStorage.getItem(SAVE_KEY);
+                if (saveData) {
+                    const parsed = JSON.parse(saveData);
+                    gameState.character = parsed.character;
+                    gameState.day = parsed.day || 1;
+                    gameState.phase = parsed.phase || 1;
+                    gameState.todayFoods = parsed.todayFoods || [];
+                    gameState.todayExercises = parsed.todayExercises || [];
+                    gameState.todaySupplements = parsed.todaySupplements || [];
+                    gameState.unlockedAchievements = new Set(parsed.unlockedAchievements || []);
+                    gameState.dailyLogs = parsed.dailyLogs || [];
+                    console.log('游戏已加载，存档时间:', parsed.saveTime);
+                    return true;
+                }
+            } catch (e) {
+                console.error('加载游戏失败:', e);
+            }
+            return false;
+        }
+
+        // 检查是否有存档
+        function hasSaveData() {
+            return localStorage.getItem(SAVE_KEY) !== null;
+        }
+
+        // 清除存档
+        function clearSave() {
+            localStorage.removeItem(SAVE_KEY);
+            console.log('存档已清除');
+        }
+
+        // 工具函数
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // 继续游戏
+        function continueGame() {
+            if (loadGame()) {
+                playMusic();
+                // 恢复界面显示
+                document.getElementById('display-name').textContent = gameState.character.name;
+                updateGameDisplay();
+                updateSelectedFoods();
+                updateSelectedExercises();
+                updateSelectedSupplements();
+                updateFoodSelectionUI();
+                updateExerciseSelectionUI();
+                updateSupplementSelectionUI();
+                showScreen('game-screen');
+            }
+        }
+
+        // 清除存档并刷新
+        function clearSaveAndReload() {
+            if (confirm(currentLanguage === 'zh' ? '确定要清除所有游戏存档吗？此操作不可恢复！' : 'Are you sure you want to clear all game saves? This cannot be undone!')) {
+                clearSave();
+                location.reload();
+            }
+        }
+
+        // 检查并显示继续游戏按钮
+        function checkSaveData() {
+            if (hasSaveData()) {
+                const continueBtn = document.getElementById('continue-btn');
+                const clearSaveBtn = document.getElementById('clear-save-btn');
+                if (continueBtn) continueBtn.style.display = 'inline-block';
+                if (clearSaveBtn) clearSaveBtn.style.display = 'inline-block';
+            }
+        }
+
+        // 更新滑块数值显示
+        function updateSliderValue(elementId, value) {
+            document.getElementById(elementId).textContent = value;
+        }
+
+        // 更新每日心情显示
+        function updateDailyMoodDisplay(value) {
+            document.getElementById('daily-mood-value').textContent = value;
+            const emoji = document.getElementById('mood-emoji');
+            const numValue = parseInt(value);
+            
+            if (numValue >= 90) emoji.textContent = '😄';
+            else if (numValue >= 70) emoji.textContent = '🙂';
+            else if (numValue >= 50) emoji.textContent = '😐';
+            else if (numValue >= 30) emoji.textContent = '😔';
+            else emoji.textContent = '😢';
+        }
+
+        // 记录心情并显示祝福
+        function recordMood() {
+            const moodValue = parseInt(document.getElementById('daily-mood').value);
+            const char = gameState.character;
+            if (char) {
+                char.mood = moodValue;
+                updateGameDisplay();
+            }
+
+            const blessings = {
+                excellent: [
+                    "今天心情超棒！保持这份美好，让快乐延续一整天！✨",
+                    "看到你这么开心，世界都变得更明亮了！继续发光吧！🌟",
+                    "美好的心情是最好的礼物，愿你今天事事顺心！🎁",
+                    "笑容是最好的化妆品，你今天一定特别美/帅！😊",
+                    "快乐会传染，你的好心情也感染了我！一起开心吧！🎉"
+                ],
+                good: [
+                    "心情不错哦！保持这份平和，今天会是美好的一天！🌈",
+                    "平静而愉悦的心情，是健康生活的开始！继续加油！💪",
+                    "今天的心情像阳光一样温暖，愿美好常伴你左右！☀️",
+                    "心情愉悦，身体也会更健康！继续保持！🌱",
+                    "带着这份好心情，去创造更多美好回忆吧！📸"
+                ],
+                normal: [
+                    "平平淡淡才是真，今天也是值得珍惜的一天！🍵",
+                    "心情平稳也是一种幸福，愿你找到生活中的小确幸！🌸",
+                    "即使普通的日子，也有它独特的美好，细心发现吧！🔍",
+                    "平静的心情适合思考和规划，今天会有所收获的！📚",
+                    "生活有起有落，保持平常心，一切都会好起来的！🌊"
+                ],
+                bad: [
+                    "今天心情不太好？没关系，明天又是新的一天！🌅",
+                    "偶尔低落是正常的，给自己一个拥抱，你很棒！🤗",
+                    "困难只是暂时的，你的坚强会带你度过难关！💪",
+                    "心情不好的时候，记得对自己温柔一点，休息一下吧！🛋️",
+                    "乌云总会散去，阳光终会到来，坚持住！⛅"
+                ],
+                terrible: [
+                    "今天很难熬吧？但请记住，你比想象中更坚强！🦋",
+                    "即使现在很艰难，也请不要放弃希望，我在支持你！🤝",
+                    "眼泪是心灵的洗礼，哭过之后会更强大！💪",
+                    " darkest hour is just before dawn，黎明前的黑暗最深！🌄",
+                    "无论今天多么糟糕，明天太阳依旧会升起！☀️"
+                ]
+            };
+
+            let category;
+            if (moodValue >= 80) category = 'excellent';
+            else if (moodValue >= 60) category = 'good';
+            else if (moodValue >= 40) category = 'normal';
+            else if (moodValue >= 20) category = 'bad';
+            else category = 'terrible';
+
+            const categoryBlessings = blessings[category];
+            const randomBlessing = categoryBlessings[Math.floor(Math.random() * categoryBlessings.length)];
+
+            const blessingDiv = document.getElementById('mood-blessing');
+            blessingDiv.querySelector('p').textContent = randomBlessing;
+            blessingDiv.style.display = 'block';
+
+            // 添加动画效果
+            blessingDiv.style.animation = 'fadeIn 0.5s ease';
+        }
+
+        // 获取属性评级
+        function getStatRating(value) {
+            if (value >= 90) return 'S';
+            if (value >= 80) return 'A';
+            if (value >= 60) return 'B';
+            if (value >= 40) return 'C';
+            if (value >= 20) return 'D';
+            return 'F';
+        }
+
+        function calculateBMI(weight, height) {
+            return weight / ((height / 100) ** 2);
+        }
+
+        function calculateBMR(weight, height, age, gender) {
+            if (gender === 'male') {
+                return 10 * weight + 6.25 * height - 5 * age + 5;
+            }
+            return 10 * weight + 6.25 * height - 5 * age - 161;
+        }
+
+        function calculateTDEE(bmr, activity = 'moderate') {
+            const multipliers = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725 };
+            return Math.round(bmr * (multipliers[activity] || 1.55));
+        }
+
+        // 获取食物英文名称
+        const foodNamesEn = {
+            '米饭': 'Rice', '面包': 'Bread', '面条': 'Noodles', '粥': 'Porridge',
+            '馒头': 'Steamed Bun', '玉米': 'Corn', '燕麦': 'Oats', '红薯': 'Sweet Potato',
+            '土豆': 'Potato', '煎饼': 'Pancake', '馄饨': 'Wonton', '饺子': 'Dumpling',
+            '包子': 'Baozi', '小米粥': 'Millet Porridge', '藜麦': 'Quinoa',
+            '鸡胸肉': 'Chicken Breast', '牛肉': 'Beef', '鱼肉': 'Fish', '鸡蛋': 'Egg',
+            '豆腐': 'Tofu', '牛奶': 'Milk', '猪肉': 'Pork', '虾': 'Shrimp',
+            '三文鱼': 'Salmon', '金枪鱼': 'Tuna', '酸奶': 'Yogurt', '奶酪': 'Cheese',
+            '黄豆': 'Soybeans', '扁豆': 'Lentils', '鸭肉': 'Duck', '羊肉': 'Lamb',
+            '螃蟹': 'Crab', '龙虾': 'Lobster',
+            '西兰花': 'Broccoli', '胡萝卜': 'Carrot', '番茄': 'Tomato', '黄瓜': 'Cucumber',
+            '菠菜': 'Spinach', '蘑菇': 'Mushroom', '白菜': 'Cabbage', '洋葱': 'Onion',
+            '大蒜': 'Garlic', '生姜': 'Ginger', '茄子': 'Eggplant', '青椒': 'Bell Pepper',
+            '芹菜': 'Celery', '生菜': 'Lettuce', '南瓜': 'Pumpkin', '萝卜': 'Radish',
+            '竹笋': 'Bamboo Shoots', '海带': 'Seaweed',
+            '苹果': 'Apple', '香蕉': 'Banana', '橙子': 'Orange', '葡萄': 'Grape',
+            '西瓜': 'Watermelon', '草莓': 'Strawberry', '桃子': 'Peach', '梨': 'Pear',
+            '芒果': 'Mango', '菠萝': 'Pineapple', '猕猴桃': 'Kiwi', '樱桃': 'Cherry',
+            '柠檬': 'Lemon', '椰子': 'Coconut', '牛油果': 'Avocado', '蓝莓': 'Blueberry',
+            '杏仁': 'Almond', '核桃': 'Walnut', '腰果': 'Cashew', '花生': 'Peanut',
+            '葵花籽': 'Sunflower Seeds', '南瓜子': 'Pumpkin Seeds', '芝麻': 'Sesame',
+            '奇亚籽': 'Chia Seeds',
+            '水': 'Water', '绿茶': 'Green Tea', '咖啡': 'Coffee', '果汁': 'Juice',
+            '汽水': 'Soda', '啤酒': 'Beer', '红酒': 'Red Wine', '奶昔': 'Smoothie',
+            '豆浆': 'Soy Milk', '椰子水': 'Coconut Water'
+        };
+
+        // 初始化食物列表
+        function initFoods() {
+            Object.entries(foods).forEach(([category, items]) => {
+                const container = document.getElementById(`food-${category}`);
+                if (container) {
+                    container.innerHTML = items.map(food => {
+                        const displayName = currentLanguage === 'en' ? (foodNamesEn[food.name] || food.name) : food.name;
+                        return `
+                        <div class="food-item" onclick="addFood('${category}', '${food.id}')">
+                            <span class="food-icon">${food.icon}</span>
+                            <div style="font-size: 12px;">${displayName}</div>
+                            <div style="font-size: 10px; color: #666;">${food.calories} kcal</div>
+                        </div>
+                    `}).join('');
+                }
+            });
+        }
+
+        // 运动英文名称映射
+        const exerciseNamesEn = {
+            '跑步': 'Running', '快走': 'Walking', '游泳': 'Swimming', '骑行': 'Cycling',
+            '跳绳': 'Jump Rope', '有氧操': 'Aerobics', '椭圆机': 'Elliptical', '划船机': 'Rowing',
+            '爬楼梯': 'Stair Climbing', '羽毛球': 'Badminton', '网球': 'Tennis', '篮球': 'Basketball',
+            '足球': 'Soccer', '乒乓球': 'Table Tennis', '瑜伽': 'Yoga', '普拉提': 'Pilates',
+            '深蹲': 'Squats', '俯卧撑': 'Push-ups', '哑铃训练': 'Dumbbell Training', '引体向上': 'Pull-ups',
+            '平板支撑': 'Plank', '卧推': 'Bench Press', '硬拉': 'Deadlift', '弓步蹲': 'Lunges',
+            '仰卧起坐': 'Sit-ups', '举重': 'Weightlifting', '搏击操': 'Kickboxing', 'TRX训练': 'TRX Training',
+            '壶铃训练': 'Kettlebell Training', '战绳': 'Battle Ropes', '拉伸': 'Stretching',
+            '泡沫轴放松': 'Foam Rolling', '太极': 'Tai Chi', '静态拉伸': 'Static Stretching',
+            '动态拉伸': 'Dynamic Stretching'
+        };
+
+        // 初始化运动列表
+        function initExercises() {
+            Object.entries(exercises).forEach(([category, items]) => {
+                const container = document.getElementById(`exercise-${category}`);
+                if (container) {
+                    container.innerHTML = items.map(ex => {
+                        const displayName = currentLanguage === 'en' ? (exerciseNamesEn[ex.name] || ex.name) : ex.name;
+                        return `
+                        <div class="exercise-item" onclick="addExercise('${category}', '${ex.id}')">
+                            <span class="exercise-icon">${ex.icon}</span>
+                            <div style="font-size: 12px;">${displayName}</div>
+                            <div style="font-size: 10px; color: #666;">${ex.calories}/h</div>
+                        </div>
+                    `}).join('');
+                }
+            });
+        }
+
+        // 添加食物
+        function addFood(category, foodId) {
+            const food = foods[category].find(f => f.id === foodId);
+            if (food) {
+                // 检查是否已选中
+                const existingIndex = gameState.todayFoods.findIndex(f => f.id === foodId);
+                if (existingIndex >= 0) {
+                    // 已选中，增加重量
+                    gameState.todayFoods[existingIndex].weight = (gameState.todayFoods[existingIndex].weight || 100) + 50;
+                    updateFoodCalories(gameState.todayFoods[existingIndex]);
+                } else {
+                    // 新选中
+                    const newFood = { ...food, weight: 100 };
+                    updateFoodCalories(newFood);
+                    gameState.todayFoods.push(newFood);
+                }
+                updateFoodSelectionUI();
+                updateSelectedFoods();
+                checkAchievements();
+            }
+        }
+
+        // 更新食物卡路里（根据重量）
+        function updateFoodCalories(food) {
+            const ratio = food.weight / 100;
+            food.actualCalories = Math.round(food.calories * ratio);
+            food.actualProtein = Math.round(food.protein * ratio * 10) / 10;
+            food.actualCarbs = Math.round(food.carbs * ratio * 10) / 10;
+            food.actualFat = Math.round(food.fat * ratio * 10) / 10;
+        }
+
+        // 更新食物选择UI
+        function updateFoodSelectionUI() {
+            document.querySelectorAll('.food-item').forEach(item => {
+                const foodId = item.getAttribute('onclick').match(/'([^']+)'/g)[1].replace(/'/g, '');
+                const isSelected = gameState.todayFoods.some(f => f.id === foodId);
+                if (isSelected) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        // 调整食物重量
+        function adjustFoodWeight(index, delta) {
+            const food = gameState.todayFoods[index];
+            food.weight = Math.max(50, food.weight + delta);
+            updateFoodCalories(food);
+            updateSelectedFoods();
+            updateNutritionDisplay();
+        }
+
+        // 添加运动
+        function addExercise(category, exerciseId) {
+            const exercise = exercises[category].find(e => e.id === exerciseId);
+            if (exercise) {
+                // 检查是否已选中
+                const existingIndex = gameState.todayExercises.findIndex(e => e.id === exerciseId);
+                if (existingIndex >= 0) {
+                    // 已选中，增加时长
+                    gameState.todayExercises[existingIndex].duration = (gameState.todayExercises[existingIndex].duration || 30) + 15;
+                    updateExerciseCalories(gameState.todayExercises[existingIndex]);
+                } else {
+                    // 新选中
+                    const newExercise = { ...exercise, duration: 30 };
+                    updateExerciseCalories(newExercise);
+                    gameState.todayExercises.push(newExercise);
+                }
+                updateExerciseSelectionUI();
+                updateSelectedExercises();
+                checkAchievements();
+            }
+        }
+
+        // 更新运动卡路里（根据时长）
+        function updateExerciseCalories(exercise) {
+            const ratio = exercise.duration / 60;
+            exercise.actualCalories = Math.round(exercise.calories * ratio);
+        }
+
+        // 更新运动选择UI
+        function updateExerciseSelectionUI() {
+            document.querySelectorAll('.exercise-item').forEach(item => {
+                const exerciseId = item.getAttribute('onclick').match(/'([^']+)'/g)[1].replace(/'/g, '');
+                const isSelected = gameState.todayExercises.some(e => e.id === exerciseId);
+                if (isSelected) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        // 调整运动时长
+        function adjustExerciseDuration(index, delta) {
+            const exercise = gameState.todayExercises[index];
+            exercise.duration = Math.max(15, exercise.duration + delta);
+            updateExerciseCalories(exercise);
+            updateSelectedExercises();
+        }
+
+        // 更新已选食物显示
+        function updateSelectedFoods() {
+            const container = document.getElementById('selected-foods');
+            if (gameState.todayFoods.length === 0) {
+                container.innerHTML = `<p style="color: #999; text-align: center;">${getText('noFoodSelected')}</p>`;
+            } else {
+                const totalCalories = gameState.todayFoods.reduce((sum, f) => sum + (f.actualCalories || f.calories), 0);
+                container.innerHTML = `
+                    <p style="margin-bottom: 10px;">${getText('selected')} ${gameState.todayFoods.length} ${currentLanguage === 'zh' ? '种食物' : 'foods'} | ${getText('totalCalories')}: ${totalCalories} ${getText('calories')}</p>
+                    ${gameState.todayFoods.map((food, index) => {
+                        const displayName = currentLanguage === 'en' ? (foodNamesEn[food.name] || food.name) : food.name;
+                        return `
+                        <div class="selected-item">
+                            ${food.icon} ${displayName}
+                            <button class="adjust-btn" onclick="adjustFoodWeight(${index}, -50)">-</button>
+                            <input type="number" class="weight-input" value="${food.weight || 100}" 
+                                onchange="setFoodWeight(${index}, this.value)" min="50" step="50">${getText('grams')}
+                            <button class="adjust-btn" onclick="adjustFoodWeight(${index}, 50)">+</button>
+                            <span style="margin-left: 8px; color: #666;">${food.actualCalories || food.calories} ${getText('calories')}</span>
+                            <button class="remove-btn" onclick="removeFood(${index})">×</button>
+                        </div>
+                    `}).join('')}
+                `;
+            }
+            updateNutritionDisplay();
+        }
+
+        // 设置食物重量
+        function setFoodWeight(index, value) {
+            const weight = parseInt(value) || 100;
+            gameState.todayFoods[index].weight = Math.max(50, weight);
+            updateFoodCalories(gameState.todayFoods[index]);
+            updateSelectedFoods();
+        }
+
+        // 更新已选运动显示
+        function updateSelectedExercises() {
+            const container = document.getElementById('selected-exercises');
+            if (gameState.todayExercises.length === 0) {
+                container.innerHTML = `<p style="color: #999; text-align: center;">${getText('noExerciseSelected')}</p>`;
+            } else {
+                const totalCalories = gameState.todayExercises.reduce((sum, e) => sum + (e.actualCalories || e.calories), 0);
+                container.innerHTML = `
+                    <p style="margin-bottom: 10px;">${getText('selected')} ${gameState.todayExercises.length} ${currentLanguage === 'zh' ? '项运动' : 'exercises'} | ${currentLanguage === 'zh' ? '预计消耗' : 'Estimated burn'}: ${totalCalories} ${getText('calories')}</p>
+                    ${gameState.todayExercises.map((ex, index) => {
+                        const displayName = currentLanguage === 'en' ? (exerciseNamesEn[ex.name] || ex.name) : ex.name;
+                        return `
+                        <div class="selected-item">
+                            ${ex.icon} ${displayName}
+                            <button class="adjust-btn" onclick="adjustExerciseDuration(${index}, -15)">-</button>
+                            <input type="number" class="duration-input" value="${ex.duration || 30}" 
+                                onchange="setExerciseDuration(${index}, this.value)" min="15" step="15">${getText('minutes')}
+                            <button class="adjust-btn" onclick="adjustExerciseDuration(${index}, 15)">+</button>
+                            <span style="margin-left: 8px; color: #666;">${ex.actualCalories || ex.calories} ${getText('calories')}</span>
+                            <button class="remove-btn" onclick="removeExercise(${index})">×</button>
+                        </div>
+                    `}).join('')}
+                `;
+            }
+        }
+
+        // 设置运动时长
+        function setExerciseDuration(index, value) {
+            const duration = parseInt(value) || 30;
+            gameState.todayExercises[index].duration = Math.max(15, duration);
+            updateExerciseCalories(gameState.todayExercises[index]);
+            updateSelectedExercises();
+        }
+
+        // 移除食物
+        function removeFood(index) {
+            gameState.todayFoods.splice(index, 1);
+            updateFoodSelectionUI();
+            updateSelectedFoods();
+        }
+
+        // 移除运动
+        function removeExercise(index) {
+            gameState.todayExercises.splice(index, 1);
+            updateExerciseSelectionUI();
+            updateSelectedExercises();
+        }
+
+        // 更新营养显示
+        function updateNutritionDisplay() {
+            const totalCalories = gameState.todayFoods.reduce((sum, f) => sum + (f.actualCalories || f.calories), 0);
+            const targetCalories = gameState.character ? gameState.character.calorieTarget : 2000;
+            const percentage = Math.min(100, Math.round((totalCalories / targetCalories) * 100));
+            
+            document.getElementById('cal-display').textContent = `${totalCalories} / ${targetCalories} kcal`;
+            document.getElementById('cal-progress').style.width = `${percentage}%`;
+            document.getElementById('cal-progress').textContent = `${percentage}%`;
+        }
+
+        // 创建角色
+        function createCharacter() {
+            const name = document.getElementById('char-name-input').value || '玩家';
+            const gender = document.getElementById('char-gender').value;
+            const height = parseInt(document.getElementById('char-height').value);
+            const weight = parseInt(document.getElementById('char-weight').value);
+            const age = parseInt(document.getElementById('char-age').value);
+            const goal = document.getElementById('char-goal').value;
+
+            // 获取用户设定的初始状态
+            const initialEnergy = parseInt(document.getElementById('init-energy').value);
+            const initialMood = parseInt(document.getElementById('init-mood').value);
+            const initialStrength = parseInt(document.getElementById('init-strength').value);
+            const initialCardio = parseInt(document.getElementById('init-cardio').value);
+
+            const bmr = calculateBMR(weight, height, age, gender);
+            const tdee = calculateTDEE(bmr);
+            
+            let calorieTarget = tdee;
+            if (goal === 'lose') calorieTarget -= 500;
+            if (goal === 'gain') calorieTarget += 300;
+
+            gameState.character = {
+                name, gender, height, weight, age, goal,
+                bmr, tdee, calorieTarget,
+                startWeight: weight,
+                energy: initialEnergy,
+                mood: initialMood,
+                strength: initialStrength,
+                cardio: initialCardio
+            };
+
+            document.getElementById('display-name').textContent = name;
+            updateGameDisplay();
+            
+            // 保存初始游戏数据
+            saveGame();
+            
+            showScreen('game-screen');
+        }
+
+        // 更新游戏显示
+        function updateGameDisplay() {
+            const char = gameState.character;
+            if (!char) return;
+
+            document.getElementById('current-day').textContent = gameState.day;
+            document.getElementById('current-phase').textContent = gameState.phase;
+            document.getElementById('display-weight').textContent = char.weight.toFixed(1) + ' kg';
+            document.getElementById('stat-energy').textContent = Math.round(char.energy);
+            document.getElementById('stat-mood').textContent = Math.round(char.mood);
+            document.getElementById('stat-strength').textContent = Math.round(char.strength);
+            document.getElementById('stat-cardio').textContent = Math.round(char.cardio);
+
+            // 更新评级
+            document.getElementById('rating-energy').textContent = getStatRating(char.energy);
+            document.getElementById('rating-energy').className = 'stat-rating ' + getStatRating(char.energy);
+            document.getElementById('rating-mood').textContent = getStatRating(char.mood);
+            document.getElementById('rating-mood').className = 'stat-rating ' + getStatRating(char.mood);
+            document.getElementById('rating-strength').textContent = getStatRating(char.strength);
+            document.getElementById('rating-strength').className = 'stat-rating ' + getStatRating(char.strength);
+            document.getElementById('rating-cardio').textContent = getStatRating(char.cardio);
+            document.getElementById('rating-cardio').className = 'stat-rating ' + getStatRating(char.cardio);
+
+            updateNutritionDisplay();
+        }
+
+        // 结束当天
+        function endDay() {
+            const char = gameState.character;
+            const totalCalories = gameState.todayFoods.reduce((sum, f) => sum + (f.actualCalories || f.calories), 0);
+            const totalBurned = gameState.todayExercises.reduce((sum, e) => sum + (e.actualCalories || e.calories), 0);
+
+            // 检查食物搭配
+            const { synergies, conflicts } = checkFoodSynergies();
+
+            // 计算补剂评分
+            let supplementScore = 0;
+            if (gameState.todaySupplements.length > 0) {
+                // 基础分
+                supplementScore = 60;
+                // 根据补剂合理性加分
+                const hasConflicts = checkSupplementConflicts();
+                if (!hasConflicts) supplementScore += 20;
+                // 根据多样性加分
+                supplementScore += Math.min(20, gameState.todaySupplements.length * 5);
+            }
+
+            // 计算评分
+            const dietScore = Math.min(100, Math.max(0, 100 - Math.abs(totalCalories - char.calorieTarget) / 10));
+            const exerciseScore = Math.min(100, gameState.todayExercises.length * 25 + 20);
+            // 综合评分包含补剂因素
+            const overallScore = Math.round((dietScore + exerciseScore + supplementScore) / 3);
+
+            // 更新属性
+            char.energy = Math.min(100, char.energy + 20);
+            char.mood = Math.min(100, char.mood + 10);
+            gameState.todayExercises.forEach(ex => {
+                char.strength = Math.min(100, char.strength + (ex.strength || 0) * 0.5);
+                char.cardio = Math.min(100, char.cardio + (ex.cardio || 0) * 0.5);
+            });
+
+            // 体重变化
+            const calorieDiff = totalCalories - char.calorieTarget - totalBurned;
+            char.weight += calorieDiff / 7700;
+
+            // 保存日志
+            gameState.dailyLogs.push({
+                day: gameState.day,
+                foods: [...gameState.todayFoods],
+                exercises: [...gameState.todayExercises],
+                supplements: [...gameState.todaySupplements],
+                dietScore, exerciseScore, supplementScore, overallScore
+            });
+
+            // 保存游戏数据
+            saveGame();
+
+            // 显示总结
+            showSummary(overallScore, dietScore, exerciseScore, supplementScore, synergies, conflicts);
+        }
+
+        // 检查补剂冲突
+        function checkSupplementConflicts() {
+            for (let i = 0; i < gameState.todaySupplements.length; i++) {
+                for (let j = i + 1; j < gameState.todaySupplements.length; j++) {
+                    const sup1 = gameState.todaySupplements[i];
+                    const sup2 = gameState.todaySupplements[j];
+                    if (sup1.conflicts.includes(sup2.id) || sup2.conflicts.includes(sup1.id)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // 显示总结
+        function showSummary(overall, diet, exercise, supplement, synergies, conflicts) {
+            const gradeKeys = ['gradeS', 'gradeA', 'gradeB', 'gradeC', 'gradeD', 'gradeF'];
+            const grades = [
+                { min: 95, grade: 'S', titleKey: 'gradeS', color: '#FFD700' },
+                { min: 85, grade: 'A', titleKey: 'gradeA', color: '#4CAF50' },
+                { min: 75, grade: 'B', titleKey: 'gradeB', color: '#8BC34A' },
+                { min: 60, grade: 'C', titleKey: 'gradeC', color: '#FFC107' },
+                { min: 40, grade: 'D', titleKey: 'gradeD', color: '#FF9800' },
+                { min: 0, grade: 'F', titleKey: 'gradeF', color: '#F44336' }
+            ];
+
+            const gradeInfo = grades.find(g => overall >= g.min);
+            document.getElementById('summary-grade').textContent = gradeInfo.grade;
+            document.getElementById('summary-grade').style.color = gradeInfo.color;
+            document.getElementById('summary-title').textContent = getText(gradeInfo.titleKey);
+            document.getElementById('score-overall').textContent = overall;
+            document.getElementById('score-diet').textContent = Math.round(diet);
+            document.getElementById('score-exercise').textContent = Math.round(exercise);
+            document.getElementById('score-supplement').textContent = Math.round(supplement);
+
+            // 显示食物搭配建议
+            const synergyDiv = document.getElementById('synergy-tips');
+            const synergyContent = document.getElementById('synergy-content');
+            if (synergies && synergies.length > 0) {
+                synergyContent.innerHTML = synergies.map(s => `
+                    <div class="synergy-tip">
+                        <strong>${s.name}</strong>
+                        <p style="margin: 5px 0; font-size: 13px;">${s.benefit}</p>
+                    </div>
+                `).join('');
+                synergyDiv.style.display = 'block';
+            } else {
+                synergyDiv.style.display = 'none';
+            }
+
+            // 显示食物禁忌警告
+            const conflictDiv = document.getElementById('conflict-warnings');
+            const conflictContent = document.getElementById('conflict-content');
+            if (conflicts && conflicts.length > 0) {
+                conflictContent.innerHTML = conflicts.map(c => `
+                    <div class="conflict-warning">
+                        <strong>${c.name}</strong>
+                        <p style="margin: 5px 0; font-size: 13px;">${c.warning}</p>
+                        <p style="margin: 5px 0; font-size: 12px; color: #666;">💡 建议：${c.solution}</p>
+                    </div>
+                `).join('');
+                conflictDiv.style.display = 'block';
+            } else {
+                conflictDiv.style.display = 'none';
+            }
+
+            // 显示补剂反馈
+            const supplementDiv = document.getElementById('supplement-feedback');
+            const supplementContent = document.getElementById('supplement-content');
+            if (gameState.todaySupplements.length > 0) {
+                let feedbackHTML = `<p style="margin-bottom: 10px;">今日选择了 ${gameState.todaySupplements.length} 种补剂</p>`;
+                
+                // 检查补剂与食物的协同作用
+                const positiveInteractions = [];
+                gameState.todaySupplements.forEach(sup => {
+                    gameState.todayFoods.forEach(food => {
+                        if (sup.interactions.includes(food.id)) {
+                            positiveInteractions.push(`${sup.name} + ${food.name}：协同作用，效果更佳`);
+                        }
+                    });
+                });
+
+                if (positiveInteractions.length > 0) {
+                    feedbackHTML += `<div class="synergy-tip" style="margin: 10px 0;">
+                        <strong>🌟 协同增效</strong>
+                        ${positiveInteractions.map(i => `<p style="margin: 5px 0; font-size: 12px;">✓ ${i}</p>`).join('')}
+                    </div>`;
+                }
+
+                // 检查补剂冲突
+                const conflictWarnings = [];
+                gameState.todaySupplements.forEach((sup1, i) => {
+                    gameState.todaySupplements.forEach((sup2, j) => {
+                        if (i < j && (sup1.conflicts.includes(sup2.id) || sup2.conflicts.includes(sup1.id))) {
+                            conflictWarnings.push(`${sup1.name} 与 ${sup2.name} 建议间隔服用`);
+                        }
+                    });
+                });
+
+                if (conflictWarnings.length > 0) {
+                    feedbackHTML += `<div class="conflict-warning" style="margin: 10px 0;">
+                        <strong>⚠️ 注意事项</strong>
+                        ${conflictWarnings.map(w => `<p style="margin: 5px 0; font-size: 12px;">• ${w}</p>`).join('')}
+                    </div>`;
+                }
+
+                supplementContent.innerHTML = feedbackHTML;
+                supplementDiv.style.display = 'block';
+            } else {
+                supplementDiv.style.display = 'none';
+            }
+
+            showScreen('summary-screen');
+        }
+
+        // 下一天
+        function nextDay() {
+            gameState.day++;
+            gameState.phase = Math.min(3, Math.ceil(gameState.day / 7));
+            gameState.todayFoods = [];
+            gameState.todayExercises = [];
+            gameState.todaySupplements = [];
+
+            // 保存游戏数据（新一天）
+            saveGame();
+
+            if (gameState.day > 21) {
+                showFinalSummary();
+            } else {
+                updateSelectedFoods();
+                updateSelectedExercises();
+                updateSelectedSupplements();
+                updateGameDisplay();
+                showScreen('game-screen');
+            }
+        }
+
+        // 显示最终总结
+        function showFinalSummary() {
+            const avgScore = gameState.dailyLogs.reduce((sum, log) => sum + log.overallScore, 0) / gameState.dailyLogs.length;
+            const grades = [
+                { min: 95, grade: 'S', titleKey: 'gradeS', color: '#FFD700' },
+                { min: 85, grade: 'A', titleKey: 'gradeA', color: '#4CAF50' },
+                { min: 75, grade: 'B', titleKey: 'gradeB', color: '#8BC34A' },
+                { min: 60, grade: 'C', titleKey: 'gradeC', color: '#FFC107' },
+                { min: 40, grade: 'D', titleKey: 'gradeD', color: '#FF9800' },
+                { min: 0, grade: 'F', titleKey: 'gradeF', color: '#F44336' }
+            ];
+
+            const gradeInfo = grades.find(g => avgScore >= g.min);
+
+            document.getElementById('final-grade').textContent = gradeInfo.grade;
+            document.getElementById('final-grade').style.color = gradeInfo.color;
+            document.getElementById('final-title').textContent = getText(gradeInfo.titleKey);
+            document.getElementById('final-score').textContent = Math.round(avgScore);
+            document.getElementById('final-weight').textContent = gameState.character.weight.toFixed(1);
+            document.getElementById('final-achievements').textContent = gameState.unlockedAchievements.size;
+
+            showScreen('end-screen');
+        }
+
+        // 检查成就
+        function checkAchievements() {
+            const newAchievements = [];
+
+            if (gameState.todayFoods.length > 0 && !gameState.unlockedAchievements.has('first_food')) {
+                gameState.unlockedAchievements.add('first_food');
+                newAchievements.push('first_food');
+            }
+
+            if (gameState.todayExercises.length > 0 && !gameState.unlockedAchievements.has('first_exercise')) {
+                gameState.unlockedAchievements.add('first_exercise');
+                newAchievements.push('first_exercise');
+            }
+
+            if (gameState.todayFoods.length >= 3 && !gameState.unlockedAchievements.has('balanced_meal')) {
+                gameState.unlockedAchievements.add('balanced_meal');
+                newAchievements.push('balanced_meal');
+            }
+
+            if (gameState.day >= 7 && !gameState.unlockedAchievements.has('week_complete')) {
+                gameState.unlockedAchievements.add('week_complete');
+                newAchievements.push('week_complete');
+            }
+
+            if (newAchievements.length > 0) {
+                const achievement = achievements.find(a => a.id === newAchievements[0]);
+                document.getElementById('achievement-unlock').style.display = 'block';
+                document.getElementById('achievement-name').textContent = `${achievement.icon} ${achievement.name} - ${achievement.desc}`;
+            }
+        }
+
+        // 当前成就筛选
+        let currentAchievementFilter = 'all';
+
+        // 显示成就列表
+        function showAchievements() {
+            renderAchievements('all');
+            showScreen('achievements-screen');
+        }
+
+        // 筛选成就
+        function filterAchievements(category) {
+            currentAchievementFilter = category;
+            renderAchievements(category);
+        }
+
+        // 渲染成就列表
+        function renderAchievements(category) {
+            const container = document.getElementById('achievement-list');
+            const statsEl = document.getElementById('achievement-stats');
+            
+            // 统计
+            const total = achievements.length;
+            const unlocked = gameState.unlockedAchievements.size;
+            const percentage = Math.round((unlocked / total) * 100);
+            statsEl.textContent = `${getText('unlocked')}: ${unlocked}/${total} (${percentage}%)`;
+            
+            // 筛选
+            let filteredAchievements = achievements;
+            if (category !== 'all') {
+                filteredAchievements = achievements.filter(ach => ach.category === category);
+            }
+            
+            container.innerHTML = filteredAchievements.map(ach => {
+                const unlocked = gameState.unlockedAchievements.has(ach.id);
+                const categoryColors = {
+                    diet: '#FF9800',
+                    exercise: '#4CAF50',
+                    lifestyle: '#9C27B0',
+                    progress: '#2196F3',
+                    score: '#FFD700',
+                    weight: '#795548',
+                    special: '#f44336'
+                };
+                const borderColor = categoryColors[ach.category] || '#ccc';
+                
+                return `
+                    <div class="achievement-item ${unlocked ? 'unlocked' : ''}" style="${unlocked ? `border-left: 4px solid ${borderColor};` : ''}">
+                        <span style="font-size: 28px; margin-right: 12px;">${ach.icon}</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; font-size: 15px;">${ach.name}</div>
+                            <div style="font-size: 12px; color: #666;">${ach.desc}</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 3px;">${getCategoryName(ach.category)}</div>
+                        </div>
+                        ${unlocked ? `<span style="background: linear-gradient(135deg, #FFD700, #FFA500); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">✓ ${getText('unlocked')}</span>` : `<span style="color: #ccc; font-size: 12px;">🔒 ${getText('locked')}</span>`}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 获取分类名称
+        function getCategoryName(category) {
+            const keys = {
+                diet: 'filterDiet',
+                exercise: 'filterExercise',
+                lifestyle: 'filterLifestyle',
+                progress: 'filterProgress',
+                score: 'filterScore',
+                weight: 'filterWeight',
+                special: 'filterSpecial'
+            };
+            return getText(keys[category]) || category;
+        }
+
+        // 初始化补剂列表
+        // 补剂英文名称映射
+        const supplementNamesEn = {
+            '维生素C': 'Vitamin C', '维生素D': 'Vitamin D', '复合维生素B': 'Vitamin B Complex',
+            '维生素E': 'Vitamin E', '维生素A': 'Vitamin A', '维生素K': 'Vitamin K',
+            '维生素B12': 'Vitamin B12', '叶酸': 'Folate', '生物素': 'Biotin', '维生素B6': 'Vitamin B6',
+            '钙片': 'Calcium', '铁剂': 'Iron', '镁': 'Magnesium', '锌': 'Zinc',
+            '硒': 'Selenium', '碘': 'Iodine', '铬': 'Chromium', '铜': 'Copper',
+            '锰': 'Manganese', '钾': 'Potassium',
+            '鱼油(Omega-3)': 'Fish Oil (Omega-3)', '益生菌': 'Probiotics', '胶原蛋白': 'Collagen',
+            '肌酸': 'Creatine', '支链氨基酸(BCAA)': 'BCAA', '谷氨酰胺': 'Glutamine',
+            '辅酶Q10': 'CoQ10', '左旋肉碱': 'L-Carnitine', '硫辛酸': 'Alpha Lipoic Acid',
+            '槲皮素': 'Quercetin', '白藜芦醇': 'Resveratrol', '褪黑素': 'Melatonin',
+            '5-羟色氨酸': '5-HTP', 'GABA': 'GABA', 'L-茶氨酸': 'L-Theanine',
+            '南非醉茄': 'Ashwagandha', '红景天': 'Rhodiola', '奶蓟草': 'Milk Thistle',
+            '姜黄素': 'Turmeric', '姜提取物': 'Ginger Extract', '紫锥菊': 'Echinacea',
+            '接骨木': 'Elderberry', '螺旋藻': 'Spirulina', '小球藻': 'Chlorella',
+            '乳清蛋白': 'Whey Protein', '酪蛋白': 'Casein', '植物蛋白': 'Plant Protein',
+            '益生元': 'Prebiotics', '消化酶': 'Digestive Enzymes', '膳食纤维': 'Fiber',
+            '洋车前子': 'Psyllium', '氨基葡萄糖': 'Glucosamine', '软骨素': 'Chondroitin',
+            'MSM': 'MSM', '透明质酸': 'Hyaluronic Acid', '硅': 'Silica', '硼': 'Boron',
+            'N-乙酰半胱氨酸': 'NAC', '牛磺酸': 'Taurine', 'β-丙氨酸': 'Beta Alanine',
+            '瓜氨酸': 'Citrulline', '精氨酸': 'Arginine', 'HMB': 'HMB', 'ZMA': 'ZMA',
+            'DHEA': 'DHEA', '孕烯醇酮': 'Pregnenolone', 'PQQ': 'PQQ', 'NMN': 'NMN',
+            '小檗碱': 'Berberine'
+        };
+
+        function initSupplements() {
+            Object.entries(supplements).forEach(([category, items]) => {
+                const container = document.getElementById(`supplements-${category}`);
+                if (container) {
+                    container.innerHTML = items.map(sup => {
+                        const displayName = currentLanguage === 'en' ? (supplementNamesEn[sup.name] || sup.name) : sup.name;
+                        return `
+                        <div class="supplement-item" onclick="addSupplement('${category}', '${sup.id}')" data-id="${sup.id}">
+                            <span class="supplement-icon">${sup.icon}</span>
+                            <div style="font-size: 13px; font-weight: bold;">${displayName}</div>
+                            <span class="supplement-dosage">${sup.dosage}</span>
+                            <div class="supplement-benefit">${sup.benefits.substring(0, 20)}...</div>
+                        </div>
+                    `}).join('');
+                }
+            });
+        }
+
+        // 添加补剂
+        function addSupplement(category, supplementId) {
+            const supplement = supplements[category].find(s => s.id === supplementId);
+            if (supplement) {
+                // 检查是否已选中
+                const existingIndex = gameState.todaySupplements.findIndex(s => s.id === supplementId);
+                if (existingIndex >= 0) {
+                    // 已选中，移除
+                    gameState.todaySupplements.splice(existingIndex, 1);
+                } else {
+                    // 新选中
+                    gameState.todaySupplements.push({ ...supplement, actualDosage: supplement.dosage });
+                }
+                updateSupplementSelectionUI();
+                updateSelectedSupplements();
+                checkSupplementWarnings();
+            }
+        }
+
+        // 更新补剂选择UI
+        function updateSupplementSelectionUI() {
+            document.querySelectorAll('.supplement-item').forEach(item => {
+                const supplementId = item.dataset.id;
+                const isSelected = gameState.todaySupplements.some(s => s.id === supplementId);
+                if (isSelected) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        // 更新已选补剂显示
+        function updateSelectedSupplements() {
+            const container = document.getElementById('supplement-list');
+            const gameContainer = document.getElementById('selected-supplements');
+            
+            if (gameState.todaySupplements.length === 0) {
+                if (container) container.innerHTML = `<p style="color: #999; text-align: center;">${getText('noSupplementSelected2')}</p>`;
+                if (gameContainer) gameContainer.innerHTML = `<p style="color: #999; font-size: 12px;">${getText('noSupplementSelected')}</p>`;
+            } else {
+                const html = `
+                    <p style="margin-bottom: 10px;">${getText('selected')} ${gameState.todaySupplements.length} ${currentLanguage === 'zh' ? '种补剂' : 'supplements'}</p>
+                    ${gameState.todaySupplements.map((sup, index) => {
+                        const displayName = currentLanguage === 'en' ? (supplementNamesEn[sup.name] || sup.name) : sup.name;
+                        return `
+                        <div class="selected-item">
+                            ${sup.icon} ${displayName}
+                            <input type="text" class="weight-input" value="${sup.actualDosage}" 
+                                onchange="setSupplementDosage(${index}, this.value)" style="width: 80px;">
+                            <button class="remove-btn" onclick="removeSupplement(${index})">×</button>
+                        </div>
+                    `}).join('')}
+                `;
+                if (container) container.innerHTML = html;
+                if (gameContainer) gameContainer.innerHTML = html;
+            }
+        }
+
+        // 设置补剂剂量
+        function setSupplementDosage(index, value) {
+            gameState.todaySupplements[index].actualDosage = value;
+            updateSelectedSupplements();
+        }
+
+        // 移除补剂
+        function removeSupplement(index) {
+            gameState.todaySupplements.splice(index, 1);
+            updateSupplementSelectionUI();
+            updateSelectedSupplements();
+            checkSupplementWarnings();
+        }
+
+        // 检查补剂警告
+        function checkSupplementWarnings() {
+            const warningDiv = document.getElementById('supplement-warnings');
+            const warningContent = document.getElementById('warning-content');
+            const warnings = [];
+
+            // 检查补剂之间的相互作用
+            gameState.todaySupplements.forEach((sup1, i) => {
+                gameState.todaySupplements.forEach((sup2, j) => {
+                    if (i < j) {
+                        // 检查冲突
+                        if (sup1.conflicts.includes(sup2.id) || sup2.conflicts.includes(sup1.id)) {
+                            warnings.push(`⚠️ ${sup1.name} 与 ${sup2.name} 可能存在相互作用，建议间隔服用`);
+                        }
+                    }
+                });
+            });
+
+            // 检查与食物的冲突
+            gameState.todaySupplements.forEach(sup => {
+                gameState.todayFoods.forEach(food => {
+                    if (sup.conflicts.includes(food.id)) {
+                        warnings.push(`⚠️ ${sup.name} 与 ${food.name} 同食可能影响吸收`);
+                    }
+                });
+            });
+
+            if (warnings.length > 0) {
+                warningContent.innerHTML = warnings.map(w => `<p style="margin: 5px 0; font-size: 12px;">${w}</p>`).join('');
+                warningDiv.style.display = 'block';
+            } else {
+                warningDiv.style.display = 'none';
+            }
+        }
+
+        // 检查食物搭配
+        function checkFoodSynergies() {
+            const synergies = [];
+            const conflicts = [];
+
+            // 检查正向搭配
+            foodSynergies.positive.forEach(synergy => {
+                const hasAllFoods = synergy.foods.every(foodId => 
+                    gameState.todayFoods.some(f => f.id === foodId)
+                );
+                if (hasAllFoods) {
+                    synergies.push(synergy);
+                }
+            });
+
+            // 检查禁忌搭配
+            foodSynergies.negative.forEach(conflict => {
+                const hasAllFoods = conflict.foods.every(foodId => 
+                    gameState.todayFoods.some(f => f.id === foodId)
+                );
+                if (hasAllFoods) {
+                    conflicts.push(conflict);
+                }
+            });
+
+            return { synergies, conflicts };
+        }
+
+        // 初始化
+        window.onload = function() {
+            initFoods();
+            initExercises();
+            initSupplements();
+            // 检查是否有存档，显示继续游戏按钮
+            checkSaveData();
+        };
+
+        // 注册Service Worker（PWA支持）
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js')
+                    .then(function(registration) {
+                        console.log('Service Worker 注册成功:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('Service Worker 注册失败:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
